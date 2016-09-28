@@ -1,57 +1,58 @@
 use std::ops::{ BitAnd, BitAndAssign, BitOrAssign, Not, Shl, Shr, Sub };
+use core::ops::Range;
 
 /// Get the bit at a given offset.
 ///
-/// `offset` is 0-indexed from the least significant (right most) bits.
+/// `offset` is 0-indexed from the least significant bits.
 ///
 /// # Examples:
 ///
 /// ```
 /// let binary = 0b11001;
-/// assert_eq!(binary.bit_at(0), true);
-/// assert_eq!(binary.bit_at(1), false);
+/// assert_eq!(binary.bit(0), true);
+/// assert_eq!(binary.bit(1), false);
 /// ```
-pub trait BitAt
+pub trait Bit
     where Self: BitAnd<Output=Self> + One + PartialEq + Shl<u8, Output=Self>
                 + Sized + Zero {
-    fn bit_at(self, offset: u8) -> bool {
+    fn bit(self, offset: u8) -> bool {
         self & (Self::one() << offset) != Self::zero()
     }
 }
 
-impl BitAt for u32 { }
-impl BitAt for u16 { }
-impl BitAt for u8 { }
+impl Bit for u32 { }
+impl Bit for u16 { }
+impl Bit for u8 { }
 
-/// Get the bits at a given offset.
+/// Get a given range of bits.
 ///
-/// `offset` is 0-indexed from the least significant (right most) bits.
-/// `length` is the number of bits to read.
+/// `range` is a 0-indexed range starting at the least significant bit.
 ///
 /// # Examples:
 ///
 /// ```
 /// let binary = 0b11001;
-/// assert_eq!(binary.bits_at(0, 2), 0b01);
-/// assert_eq!(binary.bit_at(2, 3), 0b110);
+/// assert_eq!(binary.bits(0..2), 0b01);
+/// assert_eq!(binary.bits(2..5), 0b110);
 /// ```
-pub trait BitsAt
+pub trait Bits
     where Self: BitAnd<Output=Self> + One + Shl<u8, Output=Self>
                 + Shr<u8, Output=Self> + Sized + Sub<Output=Self> {
-    fn bits_at(self, offset: u8, length: u8) -> Self {
+    fn bits(self, range: Range<u32>) -> Self {
+        let length = range.end - range.start;
         let mask = (Self::one() << length) - Self::one();
-        (self & (mask << offset)) >> offset
+        (self & (mask << range.start)) >> range.start
     }
 }
 
-impl BitsAt for u32 { }
-impl BitsAt for u16 { }
-impl BitsAt for u8 { }
+impl Bits for u32 { }
+impl Bits for u16 { }
+impl Bits for u8 { }
 
 /// Sets the bit at a given offset.
 ///
-/// `offset` is 0-indexed from the least significant (right most) bits.
-/// `value` is a boolean where `true` sets the bit, `false` removes the bit.
+/// `offset` is 0-indexed from the least significant bits.
+/// `value` is a boolean where `true` sets the bit and `false` unset the bit.
 ///
 /// # Examples:
 ///
@@ -77,11 +78,10 @@ impl SetBit for u32 { }
 impl SetBit for u16 { }
 impl SetBit for u8 { }
 
-/// Sets the bits at a given offset.
+/// Set a given range of bits.
 ///
-/// `offset` is 0-indexed from the least significant (right most) bits.
-/// `length` is the number of bits to replace.
-/// `value` are the bits to be written.
+/// `range` is a 0-indexed range starting at the least significant bit.
+/// `value` is the bits to be written.
 ///
 /// # Examples:
 ///
@@ -94,10 +94,11 @@ impl SetBit for u8 { }
 pub trait SetBits
     where Self: BitAndAssign + BitOrAssign + Not<Output=Self> + One
                 + Shl<u8, Output=Self> + Sized + Sub<Output=Self> {
-    fn set_bits(mut self, offset: u8, length: u8, value: Self) {
+    fn set_bits(self, range: Range<u32>, value: Self) -> Self {
+        let length = range.end - range.start;
         let mask = (Self::one() << length) - Self::one();
         self &= !mask;
-        self |= value << offset;
+        self |= value << range.start;
     }
 }
 
