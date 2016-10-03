@@ -44,13 +44,14 @@ impl Cpu {
                 0b0110 => { self.sbc(s, rd, rn, operand2) },
                 0b0111 => { self.rsc(s, rd, rn, operand2) },
                 0b1000 => { self.tst(s, rn, operand2) },
-                0b1011 => { self.teq(s, rn, operand2) },
+                0b1001 => { self.teq(s, rn, operand2) },
                 0b1010 => { self.cmp(s, rn, operand2) },
-                0b1001 => { self.cmn(s, rn, operand2) },
-                0b1110 => { self.orr(s, rd, rn, operand2) },
-                0b1111 => { self.mov(s, rd, operand2) },
-                0b1100 => { self.bic(s, rd, rn, operand2) },
+                0b1011 => { self.cmn(s, rn, operand2) },
+                0b1100 => { self.orr(s, rd, rn, operand2) },
+                0b1101 => { self.mov(s, rd, operand2) },
+                0b1110 => { self.bic(s, rd, rn, operand2) },
                 0b1111 => { self.mvn(s, rd, operand2) },
+                _ => { unreachable!() },
             }
         }
     }
@@ -109,6 +110,8 @@ impl Cpu {
 
             // NV
             0b1111 => { panic!("unpredictable") },
+
+            _ => { unreachable!() },
         }
     }
 
@@ -390,7 +393,7 @@ impl Cpu {
             match shift {
                 // Logical shift left
                 0b00 => {
-                    let part = rs_val.bits(0..8);
+                    let part = rs_val.bits(0..8) as u8;
                     if part == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = self.c();
@@ -399,16 +402,16 @@ impl Cpu {
                         shifter_carry_out = rm_val.bit(32 - part);
                     } else if part == 32 {
                         shifter_operand = 0;
-                        shifter_carry_out = rm.val.bit(0);
+                        shifter_carry_out = rm_val.bit(0);
                     } else /* part > 32 */ {
                         shifter_operand = 0;
-                        shifter_carry_out = 0;
+                        shifter_carry_out = false;
                     }
                 },
 
                 // Logical shift right
                 0b01 => {
-                    let part = rs_val.bits(0..8);
+                    let part = rs_val.bits(0..8) as u8;
                     if part == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = self.c();
@@ -417,23 +420,23 @@ impl Cpu {
                         shifter_carry_out = rm_val.bit(part - 1);
                     } else if part == 32 {
                         shifter_operand = 0;
-                        shifter_carry_out = rm.val.bit(31);
+                        shifter_carry_out = rm_val.bit(31);
                     } else /* part > 32 */ {
                         shifter_operand = 0;
-                        shifter_carry_out = 0;
+                        shifter_carry_out = false;
                     }
                 },
 
                 // Arithmetic shift right
                 0b10 => {
-                    let part = rs_val.bits(0..8);
+                    let part = rs_val.bits(0..8) as u8;
                     if part == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = self.c();
                     } else if part < 32 {
-                        shifter_operand = (rm_val as i32) >> part;
+                        shifter_operand = (rm_val as i32 >> part) as u32;
                         shifter_carry_out = rm_val.bit(part - 1);
-                    } else if part >= 32 {
+                    } else /* part >= 32 */ {
                         shifter_operand = if rm_val.bit(31) { 0xFFFFFFFF } else { 0 };
                         shifter_carry_out = rm_val.bit(31);
                     }
@@ -442,7 +445,7 @@ impl Cpu {
                 // Rotate right
                 0b11 => {
                     let part = rs_val.bits(0..8);
-                    let part2 = rs_val.bits(0,4);
+                    let part2 = rs_val.bits(0..4);
 
                     if part == 0 {
                         shifter_operand = rm_val;
@@ -452,9 +455,11 @@ impl Cpu {
                         shifter_carry_out = rm_val.bit(31);
                     } else /* part2 > 0 */ {
                         shifter_operand = rm_val.rotate_right(part2);
-                        shifter_carry_out = rm_val.bit(part2 - 1);
+                        shifter_carry_out = rm_val.bit(part2 as u8 - 1);
                     }
                 },
+
+                _ => { unreachable!() },
             }
 
         // Immediate shift
@@ -472,7 +477,7 @@ impl Cpu {
                         shifter_carry_out = self.c();
                     } else {
                         shifter_operand = rm_val << shift_imm;
-                        shifter_carry_out = rm_val.bits(32 - shift_imm);
+                        shifter_carry_out = rm_val.bit(32 - shift_imm as u8);
                     }
                 },
 
@@ -480,21 +485,21 @@ impl Cpu {
                 0b01 => {
                     if shift_imm == 0 {
                         shifter_operand = 0;
-                        shifter_carry_out = rm_val.bits(31);
+                        shifter_carry_out = rm_val.bit(31);
                     } else {
                         shifter_operand = rm_val >> shift_imm;
-                        shifter_carry_out = rm_val.bits(shift_imm - 1);
+                        shifter_carry_out = rm_val.bit(shift_imm as u8 - 1);
                     }
                 },
 
                 // Arithmetic shift right
                 0b10 => {
                     if shift_imm == 0 {
-                        shifter_operand = if rm_val.bits(31) { 0xFFFFFFFF } else { 0 };
-                        shifter_carry_out = rm_val.bits(31);
+                        shifter_operand = if rm_val.bit(31) { 0xFFFFFFFF } else { 0 };
+                        shifter_carry_out = rm_val.bit(31);
                     } else {
-                        shifter_operand = (rm_val as i32) >> shift_imm;
-                        shifter_carry_out = rm_val[shift_imm - 1];
+                        shifter_operand = (rm_val as i32 >> shift_imm) as u32;
+                        shifter_carry_out = rm_val.bit(shift_imm as u8 - 1);
                     }
                 },
 
@@ -502,14 +507,18 @@ impl Cpu {
                 0b11 => {
                     if shift_imm == 0 {
                         // Rotate right with extend
-                        shifter_operand = (self.c() << 31) | (rm_val >> 1);
-                        shifter_carry_out = rm.bit(0);
+                        let c_flag = if self.c() { 1 } else { 0 };
+                        shifter_operand = (c_flag << 31) | (rm_val >> 1);
+                        shifter_carry_out = rm_val.bit(0);
                     } else {
                         shifter_operand = rm_val.rotate_right(shift_imm);
-                        shifter_carry_out = rm_val[shift_imm - 1];
+                        shifter_carry_out = rm_val.bit(shift_imm as u8 - 1);
                     }
                 },
+
+                _ => { unreachable!() },
             }
+
         };
 
         (shifter_operand, shifter_carry_out)

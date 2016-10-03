@@ -38,7 +38,7 @@ impl Bit for u8 { }
 pub trait Bits
     where Self: BitAnd<Output=Self> + One + Shl<u8, Output=Self>
                 + Shr<u8, Output=Self> + Sized + Sub<Output=Self> {
-    fn bits(self, range: Range<u32>) -> Self {
+    fn bits(self, range: Range<u8>) -> Self {
         let length = range.end - range.start;
         let mask = (Self::one() << length) - Self::one();
         (self & (mask << range.start)) >> range.start
@@ -94,7 +94,7 @@ impl SetBit for u8 { }
 pub trait SetBits
     where Self: BitAndAssign + BitOrAssign + Not<Output=Self> + One
                 + Shl<u8, Output=Self> + Sized + Sub<Output=Self> {
-    fn set_bits(self, range: Range<u32>, value: Self) -> Self {
+    fn set_bits(mut self, range: Range<u8>, value: Self) {
         let length = range.end - range.start;
         let mask = (Self::one() << length) - Self::one();
         self &= !mask;
