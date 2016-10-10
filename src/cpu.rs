@@ -99,6 +99,24 @@ impl Cpu {
             return;
         }
 
+        // Swap
+        if instruction.bits(23..28) == 0b10
+        && instruction.bits(20..22) == 0
+        && instruction.bits(4..11) == 0b1001 {
+            let b = instruction.bit(22);
+            let rn = Register(instruction.bits(16..20));
+            let rd = Register(instruction.bits(12..16));
+            let rm = Register(instruction.bits(0..4));
+
+            if b {
+                self.swpb(rd, rm, rn);
+            } else {
+                self.swp(rd, rm, rn);
+            }
+
+            return;
+        }
+
         panic!("instruction not recognised");
     }
 
@@ -361,11 +379,11 @@ impl Cpu {
         println!("Instruction: swi");
     }
 
-    fn swp(&mut self) {
+    fn swp(&mut self, rd: Register, rm: Register, rn: Register) {
         println!("Instruction: swp");
     }
 
-    fn swpb(&mut self) {
+    fn swpb(&mut self, rd: Register, rm: Register, rn: Register) {
         println!("Instruction: swpb");
     }
 
