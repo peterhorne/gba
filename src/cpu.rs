@@ -117,6 +117,14 @@ impl Cpu {
             return;
         }
 
+        // Branch and exchange
+        if instruction.bits(4..28) == 0b_00010010_11111111_11110001 {
+            let rn = Register(instruction.bits(0..4));
+            self.bx(rn);
+
+            return;
+        }
+
         panic!("instruction not recognised");
     }
 
@@ -219,7 +227,7 @@ impl Cpu {
         println!("Instruction: bic");
     }
 
-    fn bx(&mut self) {
+    fn bx(&mut self, rn: Register) {
         println!("Instruction: bx");
     }
 
