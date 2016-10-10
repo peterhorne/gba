@@ -22,6 +22,10 @@ impl Cpu {
         }
     }
 
+    pub fn pc(&self) -> u32 {
+        self.registers[Register(15)]
+    }
+
     pub fn execute(&mut self, instruction: u32) {
         let condition = instruction.bits(28..32);
         if !self.condition_passed(condition) { return };
@@ -34,26 +38,48 @@ impl Cpu {
             let rd = Register(instruction.bits(12..16));
             let operand2 = self.addr_mode_1(s, instruction.bits(0..12));
 
-            return match opcode {
-                0b0000 => { self.and(s, rd, rn, operand2) },
-                0b0001 => { self.eor(s, rd, rn, operand2) },
-                0b0010 => { self.sub(s, rd, rn, operand2) },
-                0b0011 => { self.rsb(s, rd, rn, operand2) },
-                0b0100 => { self.add(s, rd, rn, operand2) },
-                0b0101 => { self.adc(s, rd, rn, operand2) },
-                0b0110 => { self.sbc(s, rd, rn, operand2) },
-                0b0111 => { self.rsc(s, rd, rn, operand2) },
-                0b1000 => { self.tst(s, rn, operand2) },
-                0b1001 => { self.teq(s, rn, operand2) },
-                0b1010 => { self.cmp(s, rn, operand2) },
-                0b1011 => { self.cmn(s, rn, operand2) },
-                0b1100 => { self.orr(s, rd, rn, operand2) },
-                0b1101 => { self.mov(s, rd, operand2) },
-                0b1110 => { self.bic(s, rd, rn, operand2) },
-                0b1111 => { self.mvn(s, rd, operand2) },
+            match opcode {
+                0b0000 => { self.and(s, rd, rn, operand2); },
+                0b0001 => { self.eor(s, rd, rn, operand2); },
+                0b0010 => { self.sub(s, rd, rn, operand2); },
+                0b0011 => { self.rsb(s, rd, rn, operand2); },
+                0b0100 => { self.add(s, rd, rn, operand2); },
+                0b0101 => { self.adc(s, rd, rn, operand2); },
+                0b0110 => { self.sbc(s, rd, rn, operand2); },
+                0b0111 => { self.rsc(s, rd, rn, operand2); },
+                0b1000 => { self.tst(s, rn, operand2); },
+                0b1001 => { self.teq(s, rn, operand2); },
+                0b1010 => { self.cmp(s, rn, operand2); },
+                0b1011 => { self.cmn(s, rn, operand2); },
+                0b1100 => { self.orr(s, rd, rn, operand2); },
+                0b1101 => { self.mov(s, rd, operand2); },
+                0b1110 => { self.bic(s, rd, rn, operand2); },
+                0b1111 => { self.mvn(s, rd, operand2); },
                 _ => { unreachable!() },
-            }
+            };
+
+            return;
         }
+
+        // Multiply
+        if instruction.bits(22..28) == 0 && instruction.bits(4..8) == 0b1001 {
+            let a = instruction.bit(21);
+            let s = instruction.bit(20);
+            let rd = Register(instruction.bits(16..20));
+            let rn = Register(instruction.bits(12..16));
+            let rs = Register(instruction.bits(8..12));
+            let rm = Register(instruction.bits(0..4));
+
+            if a {
+                self.mla(s, rd, rm, rs, rn);
+            } else {
+                self.mul(s, rd, rm, rs);
+            }
+
+            return;
+        }
+
+        panic!("instruction not recognised");
     }
 
     fn condition_passed(&self, condition: u32) -> bool {
@@ -65,52 +91,36 @@ impl Cpu {
         match condition {
             // EQ, Equal
             0b0000 => { z },
-
             // NE, Not equal
             0b0001 => { !z },
-
             // CS/HS, Carry set/unsigned higher or same
             0b0010 => { c },
-
             // CC/LO, Carry clear/unsigned lower
             0b0011 => { !c },
-
             // MI, Minus/Negative
             0b0100 => { n },
-
             // PL, Plus/positive or zero
             0b0101 => { !n },
-
             // VS, Overflow
             0b0110 => { v },
-
             // VC, No overflow
             0b0111 => { !v },
-
             // HI, Unsigned higher
             0b1000 => { c && !z },
-
             // LS, Unsigned lower or same
             0b1001 => { !c || z },
-
             // GE, Signed greater than or equal
             0b1010 => { n == v },
-
             // LT, Signed less than
             0b1011 => { n != v },
-
             // GT, Signed greater than
             0b1100 => { !z && n == v },
-
             // LE, Signed less than or equal
             0b1101 => { z || n != v },
-
             // AL, Always (unconditional)
             0b1110 => { true },
-
             // NV
             0b1111 => { panic!("unpredictable") },
-
             _ => { unreachable!() },
         }
     }
@@ -239,7 +249,7 @@ impl Cpu {
         println!("Instruction: mcr");
     }
 
-    fn mla(&mut self) {
+    fn mla(&mut self, s: bool, rd: Register, rm: Register, rs: Register, rn: Register) {
         println!("Instruction: mla");
     }
 
@@ -259,7 +269,7 @@ impl Cpu {
         println!("Instruction: msr");
     }
 
-    fn mul(&mut self) {
+    fn mul(&mut self, s: bool, rd: Register, rm: Register, rs: Register) {
         println!("Instruction: mul");
     }
 
