@@ -28,10 +28,10 @@ impl Cpu {
 
     pub fn execute(&mut self, instruction: u32) {
         let condition = instruction.bits(28..32);
-        if !self.condition_passed(condition) { return };
+        if !self.condition_passed(condition) { return; }
 
         // Data processing instruction
-        if instruction.bits(25..28) == 0b001 {
+        if instruction.bits(25..28) == 1 {
             let opcode = instruction.bits(21..25);
             let s = instruction.bit(20);
             let rn = Register(instruction.bits(16..20));
@@ -55,8 +55,8 @@ impl Cpu {
                 0b1101 => { self.mov(s, rd, operand2); },
                 0b1110 => { self.bic(s, rd, rn, operand2); },
                 0b1111 => { self.mvn(s, rd, operand2); },
-                _ => { unreachable!() },
-            };
+                _      => { unreachable!() },
+            }
 
             return;
         }
@@ -74,6 +74,26 @@ impl Cpu {
                 self.mla(s, rd, rm, rs, rn);
             } else {
                 self.mul(s, rd, rm, rs);
+            }
+
+            return;
+        }
+
+        // Multiply long
+        if instruction.bits(23..28) == 1 && instruction.bits(4..8) == 0b1001 {
+            let opcode = instruction.bits(21..23);
+            let s = instruction.bit(20);
+            let rd_hi = Register(instruction.bits(16..20));
+            let rd_lo = Register(instruction.bits(12..16));
+            let rs = Register(instruction.bits(8..12));
+            let rm = Register(instruction.bits(0..4));
+
+            match opcode {
+                0b00 => { self.umull(s, rd_hi, rd_lo, rm, rs) },
+                0b01 => { self.umlal(s, rd_hi, rd_lo, rm, rs) },
+                0b10 => { self.smull(s, rd_hi, rd_lo, rm, rs) },
+                0b11 => { self.smlal(s, rd_hi, rd_lo, rm, rs) },
+                _    => { unreachable!() }
             }
 
             return;
@@ -121,7 +141,7 @@ impl Cpu {
             0b1110 => { true },
             // NV
             0b1111 => { panic!("unpredictable") },
-            _ => { unreachable!() },
+            _      => { unreachable!() },
         }
     }
 
@@ -293,11 +313,11 @@ impl Cpu {
         println!("Instruction: sbc");
     }
 
-    fn smlal(&mut self) {
+    fn smlal(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: smlal");
     }
 
-    fn smull(&mut self) {
+    fn smull(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: smull");
     }
 
@@ -357,11 +377,11 @@ impl Cpu {
         println!("Instruction: tst");
     }
 
-    fn umlal(&mut self) {
+    fn umlal(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: umlal");
     }
 
-    fn umull(&mut self) {
+    fn umull(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: umull");
     }
 
