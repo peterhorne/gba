@@ -125,6 +125,33 @@ impl Cpu {
             return;
         }
 
+        // Halfword data transfer
+        if instruction.bits(25..28) == 0
+        && instruction.bit(7)
+        && instruction.bit(4) {
+            let p = instruction.bit(24);
+            let u = instruction.bit(23);
+            let i = instruction.bit(22);
+            let w = instruction.bit(21);
+            let l = instruction.bit(20);
+            let rn = Register(instruction.bits(16..20));
+            let rd = Register(instruction.bits(12..16));
+            let offset_a = instruction.bits(8..12);
+            let s = instruction.bit(6);
+            let offset_b = instruction.bits(0..4);
+            let address = self.addr_mode_3(p, u, i, w, rn, offset_a, offset_b);
+
+            if l {
+                if s {
+                    self.ldrsh(rd, address);
+                } else {
+                    self.ldrh(rd, address);
+                }
+            } else {
+                self.strh(rd, address);
+            }
+        }
+
         panic!("instruction not recognised");
     }
 
@@ -275,7 +302,7 @@ impl Cpu {
         println!("Instruction: ldrbt");
     }
 
-    fn ldrh(&mut self) {
+    fn ldrh(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrh");
     }
 
@@ -283,7 +310,7 @@ impl Cpu {
         println!("Instruction: ldrsb");
     }
 
-    fn ldrsh(&mut self) {
+    fn ldrsh(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrsh");
     }
 
@@ -371,7 +398,7 @@ impl Cpu {
         println!("Instruction: strbt");
     }
 
-    fn strh(&mut self) {
+    fn strh(&mut self, rd: Register, address: u32) {
         println!("Instruction: strh");
     }
 
@@ -578,6 +605,22 @@ impl Cpu {
         };
 
         (shifter_operand, shifter_carry_out)
+    }
+
+    fn addr_mode_3(&mut self, p: bool, u: bool, i: bool, w: bool, rn: Register, offset_a: u32, offset_b: u32) -> u32 {
+        if !p && w { panic!("unpredictable"); }
+
+        let offset = if i {
+            (offset_a << 4) | offset_b
+        } else {
+            self.registers[Register(offset_b)] // rm
+        };
+        let rn_val = self.registers[rn];
+        let value = if u { rn_val + offset } else { rn_val - offset };
+        let address = if p { value } else { rn_val };
+        if !p || w { self.registers[rn] = value };
+
+        address
     }
 }
 
