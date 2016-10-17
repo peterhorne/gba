@@ -150,6 +150,47 @@ impl Cpu {
             } else {
                 self.strh(rd, address);
             }
+
+            return;
+        }
+
+        // Single data transfer
+        if instruction.bits(25..28) == 0b11 {
+            let p = instruction.bit(24);
+            let u = instruction.bit(23);
+            let b = instruction.bit(22);
+            let w = instruction.bit(21);
+            let l = instruction.bit(20);
+            let rn = Register(instruction.bits(16..20));
+            let rd = Register(instruction.bits(12..16));
+            let offset = instruction.bits(0..12);
+
+            let address = if !p && w {
+                // Address translation is used to force accessing user mode
+                // registers. Address mode must be post-indexed, which is
+                // encoded as P == 0 && W == 0, so W is explicitly set.
+                self.addr_mode_2(i, p, u, 0, rn, offset_a, offset_b);
+            } else {
+                self.addr_mode_2(i, p, u, w, rn, offset_a, offset_b);
+            }
+
+            if l {
+                if !p && w {
+                    // TODO: force W bit of addressing mode to 0
+                    if b { self.ldrbt() } else { self.ldrt() }
+                } else {
+                    if b { self.ldrb() } else { self.ldr() }
+                }
+            } else {
+                if !p && w {
+                    // TODO: force W bit of addressing mode to 0
+                    if b { self.strbt() } else { self.strt() }
+                } else {
+                    if b { self.strb() } else { self.str() }
+                }
+            }
+
+            return;
         }
 
         panic!("instruction not recognised");
