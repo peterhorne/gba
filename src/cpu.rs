@@ -156,6 +156,7 @@ impl Cpu {
 
         // Single data transfer
         if instruction.bits(25..28) == 0b11 {
+            let i = instruction.bit(25); // always true
             let p = instruction.bit(24);
             let u = instruction.bit(23);
             let b = instruction.bit(22);
@@ -164,26 +165,16 @@ impl Cpu {
             let rn = Register(instruction.bits(16..20));
             let rd = Register(instruction.bits(12..16));
             let offset = instruction.bits(0..12);
-
-            let address = if !p && w {
-                // Address translation is used to force accessing user mode
-                // registers. Address mode must be post-indexed, which is
-                // encoded as P == 0 && W == 0, so W is explicitly set.
-                self.addr_mode_2(i, p, u, 0, rn, offset_a, offset_b);
-            } else {
-                self.addr_mode_2(i, p, u, w, rn, offset_a, offset_b);
-            }
+            let address = self.addr_mode_2(i, p, u, w, rn, offset);
 
             if l {
                 if !p && w {
-                    // TODO: force W bit of addressing mode to 0
                     if b { self.ldrbt() } else { self.ldrt() }
                 } else {
                     if b { self.ldrb() } else { self.ldr() }
                 }
             } else {
                 if !p && w {
-                    // TODO: force W bit of addressing mode to 0
                     if b { self.strbt() } else { self.strt() }
                 } else {
                     if b { self.strb() } else { self.str() }
@@ -646,6 +637,50 @@ impl Cpu {
         };
 
         (shifter_operand, shifter_carry_out)
+    }
+
+    fn addr_mode_2(&mut self, i: bool, p: bool, u: bool, w: bool, rn: Register, offset_12: u32) -> u32 {
+        let offset = if i {
+            let shift_imm = offset_12.bits(7..12);
+            let shift = offset_12.bits(5..7);
+            let rm = Register(offset_12.bits(0..4));
+            let rm_val = self.registers[rm];
+
+            let index = match shift {
+                0b00 => { // Logical shift left
+                    rm_val << shift_imm
+                },
+                0b01 => { // Logical shift right
+                    if shift_imm == 0 { 0 } else { rm_val >> shift_imm }
+                },
+                0b10 => { // Arithmetic shift right
+                    if shift_imm == 0 {
+                        if rm_val.bit(31) { 0xFFFFFFFF } else { 0 }
+                    } else {
+                        (rm_val as i32 >> shift_imm) as u32
+                    }
+                },
+                0b11 => {
+                    if shift_imm == 0 { // Rotate right with extend
+                        (if self.c() { 1 } else { 0 }) << 31 | rm_val >> 1
+                    } else { // Rotate right
+                        rm_val.rotate_right(shift_imm)
+                    }
+                },
+                _ => unreachable!(),
+            };
+
+            self.registers[rm]
+        } else {
+            offset_12
+        };
+
+        let rn_val = self.registers[rn];
+        let value = if u { rn_val + offset } else { rn_val - offset };
+        let address = if p { value } else { rn_val };
+        if !p || w { self.registers[rn] = value };
+
+        address
     }
 
     fn addr_mode_3(&mut self, p: bool, u: bool, i: bool, w: bool, rn: Register, offset_a: u32, offset_b: u32) -> u32 {
