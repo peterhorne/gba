@@ -30,102 +30,128 @@ impl Cpu {
         let condition = instruction.bits(28..32);
         if !self.condition_passed(condition) { return; }
 
-        // Data processing instruction
-        if instruction.bits(25..28) == 1 {
-            let opcode = instruction.bits(21..25);
-            let s = instruction.bit(20);
-            let rn = Register(instruction.bits(16..20));
-            let rd = Register(instruction.bits(12..16));
-            let operand2 = self.addr_mode_1(s, instruction.bits(0..12));
-
-            match opcode {
-                0b0000 => { self.and(s, rd, rn, operand2); },
-                0b0001 => { self.eor(s, rd, rn, operand2); },
-                0b0010 => { self.sub(s, rd, rn, operand2); },
-                0b0011 => { self.rsb(s, rd, rn, operand2); },
-                0b0100 => { self.add(s, rd, rn, operand2); },
-                0b0101 => { self.adc(s, rd, rn, operand2); },
-                0b0110 => { self.sbc(s, rd, rn, operand2); },
-                0b0111 => { self.rsc(s, rd, rn, operand2); },
-                0b1000 => { self.tst(s, rn, operand2); },
-                0b1001 => { self.teq(s, rn, operand2); },
-                0b1010 => { self.cmp(s, rn, operand2); },
-                0b1011 => { self.cmn(s, rn, operand2); },
-                0b1100 => { self.orr(s, rd, rn, operand2); },
-                0b1101 => { self.mov(s, rd, operand2); },
-                0b1110 => { self.bic(s, rd, rn, operand2); },
-                0b1111 => { self.mvn(s, rd, operand2); },
-                _      => { unreachable!() },
-            }
-
-            return;
+        match instruction.bits(25..28) {
+            0b000 => {
+                match instruction.bits(4..8) {
+                    0b0000 if !instruction.bit(20) => {
+                        self.status_register_access_instructions(instruction);
+                    },
+                    0b0001 if instruction.bits(4..28) == 0x120001 => {
+                        self.branch_and_exchange(instruction);
+                    },
+                    0b1001 if instruction.bit(24) => {
+                        self.semaphore_instructions(instruction);
+                    },
+                    0b1001 /* !instruction.bit(24) */ => {
+                        self.multiply_instructions(instruction);
+                    },
+                    0b1011 | 0b1101 | 0b1111 => {
+                        self.load_and_store_halfword_or_signed_byte(instruction);
+                    },
+                    _ => {
+                        self.data_processing(instruction);
+                    }
+                }
+            },
+            0b001 if instruction.bit(20) => {
+                self.data_processing(instruction);
+            },
+            0b001 /* !instruction.bit(20) */ => {
+                self.status_register_access_instructions(instruction);
+            },
+            0b011 if instruction.bit(4) => {
+                panic!("undefined")
+            },
+            0b010 | 0b011 /* !instruction.bit(4) */ => {
+                self.load_and_store_word_or_unsigned_byte_instructions(instruction);
+            },
+            0b100 => {
+                self.load_and_store_multiple_instructions(instruction);
+            },
+            0b101 => {
+                self.branch(instruction);
+            },
+            0b110 => {
+                self.coprocessor_data_transfer(instruction);
+            },
+            0b111 if instruction.bit(24) => {
+                self.software_interrupt(instruction);
+            },
+            0b111 /* !instruction.bit(24) */ => {
+                self.coprocessor_data_operation(instruction);
+                self.coprocessor_register_transfer(instruction);
+            },
+            _ => { unreachable!(); }
         }
+    }
 
-        // Multiply
-        if instruction.bits(22..28) == 0 && instruction.bits(4..8) == 0b1001 {
-            let a = instruction.bit(21);
-            let s = instruction.bit(20);
-            let rd = Register(instruction.bits(16..20));
-            let rn = Register(instruction.bits(12..16));
-            let rs = Register(instruction.bits(8..12));
-            let rm = Register(instruction.bits(0..4));
+    fn branch(&mut self, instruction: u32) {
+        let l = instruction.bit(24);
+        let signed_immed = instruction.bits(0..24);
+        self.b(l, signed_immed);
+    }
 
-            if a {
-                self.mla(s, rd, rm, rs, rn);
-            } else {
-                self.mul(s, rd, rm, rs);
-            }
+    fn branch_and_exchange(&mut self, instruction: u32) {
+        let rn = Register(instruction.bits(0..4));
+        self.bx(rn);
+    }
 
-            return;
+    fn coprocessor_data_operation(&mut self, instruction: u32) {
+        let opcode_1 = instruction.bits(20..24);
+        let crn = instruction.bits(16..20);
+        let crd = instruction.bits(12..16);
+        let coprocessor = instruction.bits(8..12);
+        let opcode_2 = instruction.bits(5..8);
+        let crm = instruction.bits(0..4);
+
+        self.cdp(coprocessor, opcode_1, crd, crn, crm, opcode_2)
+    }
+
+    fn coprocessor_data_transfer(&mut self, instruction: u32) {
+        if instruction.bit(20) {
+            self.ldc();
+        } else {
+            self.stc();
         }
+    }
 
-        // Multiply long
-        if instruction.bits(23..28) == 1 && instruction.bits(4..8) == 0b1001 {
-            let opcode = instruction.bits(21..23);
-            let s = instruction.bit(20);
-            let rd_hi = Register(instruction.bits(16..20));
-            let rd_lo = Register(instruction.bits(12..16));
-            let rs = Register(instruction.bits(8..12));
-            let rm = Register(instruction.bits(0..4));
-
-            match opcode {
-                0b00 => { self.umull(s, rd_hi, rd_lo, rm, rs) },
-                0b01 => { self.umlal(s, rd_hi, rd_lo, rm, rs) },
-                0b10 => { self.smull(s, rd_hi, rd_lo, rm, rs) },
-                0b11 => { self.smlal(s, rd_hi, rd_lo, rm, rs) },
-                _    => { unreachable!() }
-            }
-
-            return;
+    fn coprocessor_register_transfer(&mut self, instruction: u32) {
+        if instruction.bit(20) {
+            self.mrc();
+        } else {
+            self.mcr();
         }
+    }
 
-        // Swap
-        if instruction.bits(23..28) == 0b10
-        && instruction.bits(20..22) == 0
-        && instruction.bits(4..11) == 0b1001 {
-            let b = instruction.bit(22);
-            let rn = Register(instruction.bits(16..20));
-            let rd = Register(instruction.bits(12..16));
-            let rm = Register(instruction.bits(0..4));
+    fn data_processing(&mut self, instruction: u32) {
+        let opcode = instruction.bits(21..25);
+        let s = instruction.bit(20);
+        let rn = Register(instruction.bits(16..20));
+        let rd = Register(instruction.bits(12..16));
+        let operand2 = self.addr_mode_1(s, instruction.bits(0..12));
 
-            if b {
-                self.swpb(rd, rm, rn);
-            } else {
-                self.swp(rd, rm, rn);
-            }
+        match opcode {
+            0b0000 => { self.and(s, rd, rn, operand2); },
+            0b0001 => { self.eor(s, rd, rn, operand2); },
+            0b0010 => { self.sub(s, rd, rn, operand2); },
+            0b0011 => { self.rsb(s, rd, rn, operand2); },
+            0b0100 => { self.add(s, rd, rn, operand2); },
+            0b0101 => { self.adc(s, rd, rn, operand2); },
+            0b0110 => { self.sbc(s, rd, rn, operand2); },
+            0b0111 => { self.rsc(s, rd, rn, operand2); },
+            0b1000 => { self.tst(s, rn, operand2); },
+            0b1001 => { self.teq(s, rn, operand2); },
+            0b1010 => { self.cmp(s, rn, operand2); },
+            0b1011 => { self.cmn(s, rn, operand2); },
+            0b1100 => { self.orr(s, rd, rn, operand2); },
+            0b1101 => { self.mov(s, rd, operand2); },
+            0b1110 => { self.bic(s, rd, rn, operand2); },
+            0b1111 => { self.mvn(s, rd, operand2); },
+            _      => { unreachable!() },
+        };
+    }
 
-            return;
-        }
-
-        // Branch and exchange
-        if instruction.bits(4..28) == 0b_00010010_11111111_11110001 {
-            let rn = Register(instruction.bits(0..4));
-            self.bx(rn);
-
-            return;
-        }
-
-        // Halfword data transfer
+    fn load_and_store_halfword_or_signed_byte(&mut self, instruction: u32) {
         if instruction.bits(25..28) == 0
         && instruction.bit(7)
         && instruction.bit(4) {
@@ -137,54 +163,117 @@ impl Cpu {
             let rn = Register(instruction.bits(16..20));
             let rd = Register(instruction.bits(12..16));
             let offset_a = instruction.bits(8..12);
-            let s = instruction.bit(6);
             let offset_b = instruction.bits(0..4);
             let address = self.addr_mode_3(p, u, i, w, rn, offset_a, offset_b);
 
-            if l {
-                if s {
-                    self.ldrsh(rd, address);
-                } else {
-                    self.ldrh(rd, address);
-                }
-            } else {
-                self.strh(rd, address);
+            match instruction.bits(4..8) {
+                0b1011 => {
+                    if l {
+                        self.ldrh(rd, address);
+                    } else {
+                        self.strh(rd, address);
+                    }
+                },
+                0b1101 => { self.strh(rd, address); },
+                0b1111 => { self.ldrsh(rd, address); },
+                _ => unreachable!(),
             }
-
-            return;
         }
+    }
 
-        // Single data transfer
-        if instruction.bits(25..28) == 0b11 {
-            let i = instruction.bit(25); // always true
-            let p = instruction.bit(24);
-            let u = instruction.bit(23);
-            let b = instruction.bit(22);
-            let w = instruction.bit(21);
-            let l = instruction.bit(20);
-            let rn = Register(instruction.bits(16..20));
-            let rd = Register(instruction.bits(12..16));
-            let offset = instruction.bits(0..12);
-            let address = self.addr_mode_2(i, p, u, w, rn, offset);
+    fn load_and_store_multiple_instructions(&mut self, instruction: u32) {
+        match (instruction.bit(20), instruction.bit(22), instruction.bit(15)) {
+            (true,  true, true)  => self.ldm3(),
+            (true,  true, false) => self.ldm2(),
+            (true,  false, _)    => self.ldm1(),
+            (false, true,  _)    => self.stm2(),
+            (false, false, _)    => self.stm1(),
+        }
+    }
 
-            if l {
-                if !p && w {
-                    if b { self.ldrbt() } else { self.ldrt() }
-                } else {
-                    if b { self.ldrb() } else { self.ldr() }
-                }
+    fn load_and_store_word_or_unsigned_byte_instructions(&mut self, instruction: u32) {
+        let i = instruction.bit(25);
+        let p = instruction.bit(24);
+        let u = instruction.bit(23);
+        let b = instruction.bit(22);
+        let w = instruction.bit(21);
+        let l = instruction.bit(20);
+        let rn = Register(instruction.bits(16..20));
+        let rd = Register(instruction.bits(12..16));
+        let offset = instruction.bits(0..12);
+        let address = self.addr_mode_2(i, p, u, w, rn, offset);
+
+        if l {
+            if !p && w {
+                if b { self.ldrbt() } else { self.ldrt() }
             } else {
-                if !p && w {
-                    if b { self.strbt() } else { self.strt() }
-                } else {
-                    if b { self.strb() } else { self.str() }
-                }
+                if b { self.ldrb() } else { self.ldr() }
             }
-
-            return;
+        } else {
+            if !p && w {
+                if b { self.strbt() } else { self.strt() }
+            } else {
+                if b { self.strb() } else { self.str() }
+            }
         }
+    }
 
-        panic!("instruction not recognised");
+    fn multiply_instructions(&mut self, instruction: u32) {
+        let long = instruction.bit(23);
+        let s = instruction.bit(20);
+        let rd = Register(instruction.bits(16..20)); // rd_hi (if long)
+        let rn = Register(instruction.bits(12..16)); // rd_lo (if long)
+        let rs = Register(instruction.bits(8..12));
+        let rm = Register(instruction.bits(0..4));
+
+        if long {
+            match instruction.bits(21..23) {
+                0b00 => { self.umull(s, rd, rn, rm, rs) },
+                0b01 => { self.umlal(s, rd, rn, rm, rs) },
+                0b10 => { self.smull(s, rd, rn, rm, rs) },
+                0b11 => { self.smlal(s, rd, rn, rm, rs) },
+                _    => { unreachable!() }
+            }
+        } else {
+            if instruction.bit(21) {
+                self.mla(s, rd, rm, rs, rn);
+            } else {
+                self.mul(s, rd, rm, rs);
+            }
+        }
+    }
+
+    fn semaphore_instructions(&mut self, instruction: u32) {
+        let b = instruction.bit(22);
+        let rn = Register(instruction.bits(16..20));
+        let rd = Register(instruction.bits(12..16));
+        let rm = Register(instruction.bits(0..4));
+
+        if b {
+            self.swpb(rd, rm, rn);
+        } else {
+            self.swp(rd, rm, rn);
+        }
+    }
+
+    fn software_interrupt(&mut self, instruction: u32) {
+        let immediate = instruction.bits(0..24);
+        self.swi(immediate);
+    }
+
+    fn status_register_access_instructions(&mut self, instruction: u32) {
+        if instruction.bit(21) {
+            let r = instruction.bit(22);
+            let f = instruction.bit(19);
+            let s = instruction.bit(18);
+            let x = instruction.bit(17);
+            let c = instruction.bit(16);
+            let address = (); // TODO
+
+            self.msr();
+        } else {
+            self.mrs();
+        }
     }
 
     fn condition_passed(&self, condition: u32) -> bool {
@@ -278,7 +367,7 @@ impl Cpu {
         println!("Instruction: and");
     }
 
-    fn b(&mut self) {
+    fn b(&mut self, l: bool, signed_immed: u32) {
         println!("Instruction: b");
     }
 
@@ -290,7 +379,7 @@ impl Cpu {
         println!("Instruction: bx");
     }
 
-    fn cdp(&mut self) {
+    fn cdp(&mut self, coprocessor: u32, opcode_1: u32, crd: u32, crn: u32, crm: u32, opcode_2: u32) {
         println!("Instruction: cdp");
     }
 
@@ -442,7 +531,7 @@ impl Cpu {
         println!("Instruction: sub");
     }
 
-    fn swi(&mut self) {
+    fn swi(&mut self, immediate: u32) {
         println!("Instruction: swi");
     }
 
