@@ -418,6 +418,17 @@ impl Cpu {
 
     fn eor(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: eor");
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let result = self.registers[rn] | shifter_operand;
+        self.registers[rd] = result;
+
+        if s && rd == Register(15) {
+            self.cpsr = self.spsr;
+        } else if s {
+            self.set_n(result.bit(31));
+            self.set_z(result == 0);
+            self.set_c(shifter_carry_out);
+        }
     }
 
     fn ldc(&mut self) {
