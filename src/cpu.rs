@@ -2,8 +2,11 @@ use bit::{Bit, Bits, SetBit};
 use std::ops::{Index, IndexMut};
 
 pub struct Cpu {
-    // General purpose registers
-    // Register 15 is the Program Counter (PC)
+    // r0-7:  Unbanked registers
+    // r8-14: Banked registers
+    // r13:   Stack pointer (SP)
+    // r14:   Link register (LR)
+    // r15:   Program counter (PC)
     registers: Registers,
 
     // Current Program Status Register
@@ -27,61 +30,68 @@ impl Cpu {
     }
 
     pub fn execute(&mut self, instruction: u32) {
+        let pc = Register(15);
+        let cached_pc = self.registers[pc];
         let condition = instruction.bits(28..32);
-        if !self.condition_passed(condition) { return; }
 
-        match instruction.bits(25..28) {
-            0b000 => {
-                match instruction.bits(4..8) {
-                    0b0000 if !instruction.bit(20) => {
-                        self.status_register_access_instructions(instruction);
-                    },
-                    0b0001 if instruction.bits(4..28) == 0x120001 => {
-                        self.branch_and_exchange(instruction);
-                    },
-                    0b1001 if instruction.bit(24) => {
-                        self.semaphore_instructions(instruction);
-                    },
-                    0b1001 /* !instruction.bit(24) */ => {
-                        self.multiply_instructions(instruction);
-                    },
-                    0b1011 | 0b1101 | 0b1111 => {
-                        self.load_and_store_halfword_or_signed_byte(instruction);
-                    },
-                    _ => {
-                        self.data_processing(instruction);
+        if self.condition_passed(condition) {
+            match instruction.bits(25..28) {
+                0b000 => {
+                    match instruction.bits(4..8) {
+                        0b0000 if !instruction.bit(20) => {
+                            self.status_register_access_instructions(instruction);
+                        },
+                        0b0001 if instruction.bits(4..28) == 0x120001 => {
+                            self.branch_and_exchange(instruction);
+                        },
+                        0b1001 if instruction.bit(24) => {
+                            self.semaphore_instructions(instruction);
+                        },
+                        0b1001 /* !instruction.bit(24) */ => {
+                            self.multiply_instructions(instruction);
+                        },
+                        0b1011 | 0b1101 | 0b1111 => {
+                            self.load_and_store_halfword_or_signed_byte(instruction);
+                        },
+                        _ => {
+                            self.data_processing(instruction);
+                        }
                     }
-                }
-            },
-            0b001 if instruction.bit(20) => {
-                self.data_processing(instruction);
-            },
-            0b001 /* !instruction.bit(20) */ => {
-                self.status_register_access_instructions(instruction);
-            },
-            0b011 if instruction.bit(4) => {
-                panic!("undefined")
-            },
-            0b010 | 0b011 /* !instruction.bit(4) */ => {
-                self.load_and_store_word_or_unsigned_byte_instructions(instruction);
-            },
-            0b100 => {
-                self.load_and_store_multiple_instructions(instruction);
-            },
-            0b101 => {
-                self.branch(instruction);
-            },
-            0b110 => {
-                self.coprocessor_data_transfer(instruction);
-            },
-            0b111 if instruction.bit(24) => {
-                self.software_interrupt(instruction);
-            },
-            0b111 /* !instruction.bit(24) */ => {
-                self.coprocessor_data_operation(instruction);
-                self.coprocessor_register_transfer(instruction);
-            },
-            _ => { unreachable!(); }
+                },
+                0b001 if instruction.bit(20) => {
+                    self.data_processing(instruction);
+                },
+                0b001 /* !instruction.bit(20) */ => {
+                    self.status_register_access_instructions(instruction);
+                },
+                0b011 if instruction.bit(4) => {
+                    panic!("undefined")
+                },
+                0b010 | 0b011 /* !instruction.bit(4) */ => {
+                    self.load_and_store_word_or_unsigned_byte_instructions(instruction);
+                },
+                0b100 => {
+                    self.load_and_store_multiple_instructions(instruction);
+                },
+                0b101 => {
+                    self.branch(instruction);
+                },
+                0b110 => {
+                    self.coprocessor_data_transfer(instruction);
+                },
+                0b111 if instruction.bit(24) => {
+                    self.software_interrupt(instruction);
+                },
+                0b111 /* !instruction.bit(24) */ => {
+                    self.coprocessor_data_operation(instruction);
+                    self.coprocessor_register_transfer(instruction);
+                },
+                _ => { unreachable!(); }
+            }
+        }
+
+        if cached_pc == self.registers[pc] {
+            self.registers[pc] += 4;
         }
     }
 
@@ -369,6 +379,10 @@ impl Cpu {
 
     fn b(&mut self, l: bool, signed_immed: u32) {
         println!("Instruction: b");
+        if l { self.registers[Register(14)] += 4; }
+        let mask = 1 << (24 - 1);
+        let sign_extended = (signed_immed ^ mask) - mask;
+        self.registers[Register(15)] += sign_extended << 2;
     }
 
     fn bic(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
