@@ -707,7 +707,12 @@ impl Cpu {
 
     fn tst(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: tst");
-        unimplemented!();
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let rn_val = self.registers[rn];
+        let result = rn_val & shifter_operand;
+        self.set_n(result.bit(31));
+        self.set_z(result == 0);
+        self.set_c(shifter_carry_out);
     }
 
     fn umlal(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
