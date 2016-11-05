@@ -702,7 +702,12 @@ impl Cpu {
 
     fn teq(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: teq");
-        unimplemented!();
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let rn_val = self.registers[rn];
+        let result = rn_val | shifter_operand;
+        self.set_n(result.bit(31));
+        self.set_z(result == 0);
+        self.set_c(shifter_carry_out);
     }
 
     fn tst(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
