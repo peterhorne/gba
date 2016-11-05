@@ -605,6 +605,19 @@ impl Cpu {
 
     fn sub(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: sub");
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let operand1 = self.registers[rn];
+        let result = operand1 - shifter_operand;
+        self.registers[rd] = result;
+
+        if s && rd == Register(15) {
+            self.cpsr = self.spsr;
+        } else if s {
+            self.set_n(result.bit(31));
+            self.set_z(result == 0);
+            self.set_c(!borrow_from(operand1, shifter_operand));
+            self.set_v(overflow_from_sub(operand1, shifter_operand, result));
+        }
     }
 
     fn swi(&mut self, immediate: u32) {
@@ -870,6 +883,20 @@ impl Cpu {
 
         address
     }
+}
+
+// Arithmetic flags
+
+fn borrow_from(operand1: u32, operand2: u32) -> bool {
+    operand1 < operand2
+}
+
+fn overflow_from_add(operand1: u32, operand2: u32, result: u32) -> bool {
+    operand1.bit(31) == operand2.bit(31) && result.bit(31) != operand1.bit(31)
+}
+
+fn overflow_from_sub(operand1: u32, operand2: u32, result: u32) -> bool {
+    operand1.bit(31) != operand2.bit(31) && result.bit(31) != operand1.bit(31)
 }
 
 // Newtype to prevent a register's index being mistaken for it's value.
