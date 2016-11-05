@@ -603,9 +603,9 @@ impl Cpu {
     fn sbc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: sbc");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let operand1 = self.registers[rn];
+        let rn_val = self.registers[rn];
         let not_c_flag = if self.c() { 0 } else { 1 };
-        let result = operand1 - shifter_operand - not_c_flag;
+        let result = rn_val - shifter_operand - not_c_flag;
         self.registers[rd] = result;
 
         if s && rd == Register(15) {
@@ -613,8 +613,8 @@ impl Cpu {
         } else if s {
             self.set_n(result.bit(31));
             self.set_z(result == 0);
-            self.set_c(!borrow_from(operand1, shifter_operand + not_c_flag));
-            self.set_v(overflow_from_sub(operand1, shifter_operand + not_c_flag, result));
+            self.set_c(!borrow_from(rn_val, shifter_operand + not_c_flag));
+            self.set_v(overflow_from_sub(rn_val, shifter_operand + not_c_flag, result));
         }
     }
 
@@ -671,8 +671,8 @@ impl Cpu {
     fn sub(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: sub");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let operand1 = self.registers[rn];
-        let result = operand1 - shifter_operand;
+        let rn_val = self.registers[rn];
+        let result = rn_val - shifter_operand;
         self.registers[rd] = result;
 
         if s && rd == Register(15) {
@@ -680,8 +680,8 @@ impl Cpu {
         } else if s {
             self.set_n(result.bit(31));
             self.set_z(result == 0);
-            self.set_c(!borrow_from(operand1, shifter_operand));
-            self.set_v(overflow_from_sub(operand1, shifter_operand, result));
+            self.set_c(!borrow_from(rn_val, shifter_operand));
+            self.set_v(overflow_from_sub(rn_val, shifter_operand, result));
         }
     }
 
