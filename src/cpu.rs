@@ -367,7 +367,21 @@ impl Cpu {
 
     fn adc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: adc");
-        unimplemented!();
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let rn_val = self.registers[rn];
+        let c_flag = if self.c() { 1 } else { 0 };
+        let result_long = rn_val as u64 + shifter_operand as u64 + c_flag as u64;
+        let result = (result_long & 0xFFFFFFFF) as u32;
+        self.registers[rd] = result;
+
+        if s && rd == Register(15) {
+            self.cpsr = self.spsr;
+        } else if s {
+            self.set_n(result.bit(31));
+            self.set_z(result == 0);
+            self.set_c(carry_from(result_long));
+            self.set_v(overflow_from_add(rn_val, shifter_operand, result));
+        }
     }
 
     fn add(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
