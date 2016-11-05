@@ -371,7 +371,7 @@ impl Cpu {
         let rn_val = self.registers[rn];
         let c_flag = if self.c() { 1 } else { 0 };
         let result_long = rn_val as u64 + shifter_operand as u64 + c_flag as u64;
-        let result = (result_long & 0xFFFFFFFF) as u32;
+        let result = result_long as u32;
         self.registers[rd] = result;
 
         if s && rd == Register(15) {
@@ -389,7 +389,7 @@ impl Cpu {
         let (shifter_operand, shifter_carry_out) = operand2;
         let rn_val = self.registers[rn];
         let result_long = rn_val as u64 + shifter_operand as u64;
-        let result = (result_long & 0xFFFFFFFF) as u32;
+        let result = result_long as u32;
         self.registers[rd] = result;
 
         if s && rd == Register(15) {
@@ -445,7 +445,7 @@ impl Cpu {
         let (shifter_operand, shifter_carry_out) = operand2;
         let rn_val = self.registers[rn];
         let result_long = rn_val as u64 + shifter_operand as u64;
-        let result = (result_long & 0xFFFFFFFF) as u32;
+        let result = result_long as u32;
 
         self.set_n(result.bit(31));
         self.set_z(result == 0);
