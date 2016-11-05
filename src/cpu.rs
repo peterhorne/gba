@@ -442,7 +442,15 @@ impl Cpu {
 
     fn cmn(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: cmn");
-        unimplemented!();
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let rn_val = self.registers[rn];
+        let result_long = rn_val as u64 + shifter_operand as u64;
+        let result = (result_long & 0xFFFFFFFF) as u32;
+
+        self.set_n(result.bit(31));
+        self.set_z(result == 0);
+        self.set_c(carry_from(result_long));
+        self.set_z(overflow_from_add(rn_val, shifter_operand, result));
     }
 
     fn cmp(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
