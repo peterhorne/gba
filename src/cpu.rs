@@ -447,7 +447,14 @@ impl Cpu {
 
     fn cmp(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: cmp");
-        unimplemented!();
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let rn_val = self.registers[rn];
+        let result = rn_val - shifter_operand;
+        self.set_n(result.bit(31));
+        self.set_z(result == 0);
+        self.set_c(!borrow_from(rn_val, shifter_operand));
+        self.set_z(overflow_from_sub(rn_val, shifter_operand, result));
+unimplemented!();
     }
 
     fn eor(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
