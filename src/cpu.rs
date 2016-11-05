@@ -589,7 +589,20 @@ impl Cpu {
 
     fn sbc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: sbc");
-        unimplemented!();
+        let (shifter_operand, shifter_carry_out) = operand2;
+        let operand1 = self.registers[rn];
+        let not_c_flag = if self.c() { 0 } else { 1 };
+        let result = operand1 - shifter_operand - not_c_flag;
+        self.registers[rd] = result;
+
+        if s && rd == Register(15) {
+            self.cpsr = self.spsr;
+        } else if s {
+            self.set_n(result.bit(31));
+            self.set_z(result == 0);
+            self.set_c(!borrow_from(operand1, shifter_operand + not_c_flag));
+            self.set_v(overflow_from_sub(operand1, shifter_operand + not_c_flag, result));
+        }
     }
 
     fn smlal(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
