@@ -367,10 +367,12 @@ impl Cpu {
 
     fn adc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: adc");
+        unimplemented!();
     }
 
     fn add(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: add");
+        unimplemented!();
     }
 
     fn and(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
@@ -398,22 +400,27 @@ impl Cpu {
 
     fn bic(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: bic");
+        unimplemented!();
     }
 
     fn bx(&mut self, rn: Register) {
         println!("Instruction: bx");
+        unimplemented!();
     }
 
     fn cdp(&mut self, coprocessor: u32, opcode_1: u32, crd: u32, crn: u32, crm: u32, opcode_2: u32) {
         println!("Instruction: cdp");
+        unimplemented!();
     }
 
     fn cmn(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: cmn");
+        unimplemented!();
     }
 
     fn cmp(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: cmp");
+        unimplemented!();
     }
 
     fn eor(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
@@ -433,134 +440,167 @@ impl Cpu {
 
     fn ldc(&mut self) {
         println!("Instruction: ldc");
+        unimplemented!();
     }
 
     fn ldm1(&mut self) {
         println!("Instruction: ldm1");
+        unimplemented!();
     }
 
     fn ldm2(&mut self) {
         println!("Instruction: ldm2");
+        unimplemented!();
     }
 
     fn ldm3(&mut self) {
         println!("Instruction: ldm3");
+        unimplemented!();
     }
 
     fn ldr(&mut self) {
         println!("Instruction: ldr");
+        unimplemented!();
     }
 
     fn ldrb(&mut self) {
         println!("Instruction: ldrb");
+        unimplemented!();
     }
 
     fn ldrbt(&mut self) {
         println!("Instruction: ldrbt");
+        unimplemented!();
     }
 
     fn ldrh(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrh");
+        unimplemented!();
     }
 
     fn ldrsb(&mut self) {
         println!("Instruction: ldrsb");
+        unimplemented!();
     }
 
     fn ldrsh(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrsh");
+        unimplemented!();
     }
 
     fn ldrt(&mut self) {
         println!("Instruction: ldrt");
+        unimplemented!();
     }
 
     fn mcr(&mut self) {
         println!("Instruction: mcr");
+        unimplemented!();
     }
 
     fn mla(&mut self, s: bool, rd: Register, rm: Register, rs: Register, rn: Register) {
         println!("Instruction: mla");
+        unimplemented!();
     }
 
     fn mov(&mut self, s: bool, rd: Register, operand2: (u32, bool)) {
         println!("Instruction: mov");
+        unimplemented!();
     }
 
     fn mrc(&mut self) {
         println!("Instruction: mrc");
+        unimplemented!();
     }
 
     fn mrs(&mut self) {
         println!("Instruction: mrs");
+        unimplemented!();
     }
 
     fn msr(&mut self) {
         println!("Instruction: msr");
+        unimplemented!();
     }
 
     fn mul(&mut self, s: bool, rd: Register, rm: Register, rs: Register) {
         println!("Instruction: mul");
+        unimplemented!();
     }
 
     fn mvn(&mut self, s: bool, rd: Register, operand2: (u32, bool)) {
         println!("Instruction: mvn");
+        unimplemented!();
     }
 
     fn orr(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: orr");
+        unimplemented!();
     }
 
     fn rsb(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: rsb");
+        unimplemented!();
     }
 
     fn rsc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: rsc");
+        unimplemented!();
     }
 
     fn sbc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: sbc");
+        unimplemented!();
     }
 
     fn smlal(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: smlal");
+        unimplemented!();
     }
 
     fn smull(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: smull");
+        unimplemented!();
     }
 
     fn stc(&mut self) {
         println!("Instruction: stc");
+        unimplemented!();
     }
 
     fn stm1(&mut self) {
         println!("Instruction: stm1");
+        unimplemented!();
     }
 
     fn stm2(&mut self) {
         println!("Instruction: stm2");
+        unimplemented!();
     }
 
     fn str(&mut self) {
         println!("Instruction: str");
+        unimplemented!();
     }
 
     fn strb(&mut self) {
         println!("Instruction: strb");
+        unimplemented!();
     }
 
     fn strbt(&mut self) {
         println!("Instruction: strbt");
+        unimplemented!();
     }
 
     fn strh(&mut self, rd: Register, address: u32) {
         println!("Instruction: strh");
+        unimplemented!();
     }
 
     fn strt(&mut self) {
         println!("Instruction: strt");
+        unimplemented!();
     }
 
     fn sub(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
@@ -569,30 +609,37 @@ impl Cpu {
 
     fn swi(&mut self, immediate: u32) {
         println!("Instruction: swi");
+        unimplemented!();
     }
 
     fn swp(&mut self, rd: Register, rm: Register, rn: Register) {
         println!("Instruction: swp");
+        unimplemented!();
     }
 
     fn swpb(&mut self, rd: Register, rm: Register, rn: Register) {
         println!("Instruction: swpb");
+        unimplemented!();
     }
 
     fn teq(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: teq");
+        unimplemented!();
     }
 
     fn tst(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: tst");
+        unimplemented!();
     }
 
     fn umlal(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: umlal");
+        unimplemented!();
     }
 
     fn umull(&mut self, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
         println!("Instruction: umull");
+        unimplemented!();
     }
 
     // Addressing modes
