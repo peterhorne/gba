@@ -134,11 +134,12 @@ impl Cpu {
     }
 
     fn data_processing(&mut self, instruction: u32) {
+        let i = instruction.bit(25);
         let opcode = instruction.bits(21..25);
         let s = instruction.bit(20);
         let rn = Register(instruction.bits(16..20));
         let rd = Register(instruction.bits(12..16));
-        let operand2 = self.addr_mode_1(s, instruction.bits(0..12));
+        let operand2 = self.addr_mode_1(i, instruction.bits(0..12));
 
         match opcode {
             0b0000 => { self.and(s, rd, rn, operand2); },
@@ -789,12 +790,12 @@ unimplemented!();
     // Addressing modes
 
     // Returns (shifter_operand, shifter_carry_out)
-    fn addr_mode_1(&self, s: bool, operand: u32) -> (u32, bool) {
+    fn addr_mode_1(&self, i: bool, operand: u32) -> (u32, bool) {
         let shifter_operand: u32;
         let shifter_carry_out: bool;
 
         // 32-bit immediate
-        if s {
+        if i {
             let rotate_imm = operand.bits(8..12);
             let immed_8 = operand.bits(0..8);
 
