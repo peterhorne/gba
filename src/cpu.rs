@@ -547,7 +547,16 @@ unimplemented!();
 
     fn mov(&mut self, s: bool, rd: Register, operand2: (u32, bool)) {
         println!("Instruction: mov");
-        unimplemented!();
+        let (shifter_operand, shifter_carry_out) = operand2;
+        self.registers[rd] = shifter_operand;
+
+        if s && rd == Register(15) {
+            self.cpsr = self.spsr;
+        } else if s {
+            self.set_n(shifter_operand.bit(31));
+            self.set_z(shifter_operand == 0);
+            self.set_c(shifter_carry_out);
+        }
     }
 
     fn mrc(&mut self) {
