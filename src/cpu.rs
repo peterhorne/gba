@@ -273,18 +273,19 @@ impl Cpu {
     }
 
     fn status_register_access_instructions(&mut self, instruction: u32) {
-        if instruction.bit(21) {
-            let i = instruction.bit(25);
-            let r = instruction.bit(22);
-            let f = instruction.bit(19);
-            let s = instruction.bit(18);
-            let x = instruction.bit(17);
-            let c = instruction.bit(16);
-            let operand = self.addr_mode_1(i, instruction.bits(0..12));
+        let i = instruction.bit(25);
+        let r = instruction.bit(22);
+        let f = instruction.bit(19);
+        let s = instruction.bit(18);
+        let x = instruction.bit(17);
+        let c = instruction.bit(16);
+        let rd = Register(instruction.bits(12..16));
+        let operand = self.addr_mode_1(i, instruction.bits(0..12));
 
+        if instruction.bit(21) {
             self.msr(c, x, s, f, r, operand.0);
         } else {
-            self.mrs();
+            self.mrs(r, rd);
         }
     }
 
@@ -577,9 +578,9 @@ unimplemented!();
         unimplemented!();
     }
 
-    fn mrs(&mut self) {
+    fn mrs(&mut self, r: bool, rd: Register) {
         println!("Instruction: mrs");
-        unimplemented!();
+        self.registers[rd] = if r { self.spsr } else { self.cpsr };
     }
 
     fn msr(&mut self, c: bool, x: bool, s: bool, f: bool, r: bool, operand: u32) {
