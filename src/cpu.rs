@@ -1,4 +1,4 @@
-use bit::{Bit, Bits, SetBit};
+use bit::{Bit, Bits, SetBit, SetBits};
 use std::ops::{Index, IndexMut};
 
 pub struct Cpu {
@@ -274,14 +274,15 @@ impl Cpu {
 
     fn status_register_access_instructions(&mut self, instruction: u32) {
         if instruction.bit(21) {
+            let i = instruction.bit(25);
             let r = instruction.bit(22);
             let f = instruction.bit(19);
             let s = instruction.bit(18);
             let x = instruction.bit(17);
             let c = instruction.bit(16);
-            let address = (); // TODO
+            let operand = self.addr_mode_1(i, instruction.bits(0..12));
 
-            self.msr();
+            self.msr(c, x, s, f, r, operand.0);
         } else {
             self.mrs();
         }
@@ -581,9 +582,21 @@ unimplemented!();
         unimplemented!();
     }
 
-    fn msr(&mut self) {
+    fn msr(&mut self, c: bool, x: bool, s: bool, f: bool, r: bool, operand: u32) {
         println!("Instruction: msr");
-        unimplemented!();
+        if r {
+            if !current_mode_has_spsr() { return; }
+            if c { self.spsr.set_bits(0..8,   operand.bits(0..8)); }
+            if x { self.spsr.set_bits(8..16,  operand.bits(8..16)); }
+            if s { self.spsr.set_bits(16..24, operand.bits(16..24)); }
+            if f { self.spsr.set_bits(24..32, operand.bits(24..32)); }
+        } else {
+            let priviledged = in_a_priviledged_mode();
+            if c && priviledged { self.cpsr.set_bits(0..8,   operand.bits(0..8)); }
+            if x && priviledged { self.cpsr.set_bits(8..16,  operand.bits(8..16)); }
+            if s && priviledged { self.cpsr.set_bits(16..24, operand.bits(16..24)); }
+            if f                { self.cpsr.set_bits(24..32, operand.bits(24..32)); }
+        }
     }
 
     fn mul(&mut self, s: bool, rd: Register, rm: Register, rs: Register) {
@@ -1033,6 +1046,17 @@ fn overflow_from_add(operand1: u32, operand2: u32, result: u32) -> bool {
 
 fn overflow_from_sub(operand1: u32, operand2: u32, result: u32) -> bool {
     operand1.bit(31) != operand2.bit(31) && result.bit(31) != operand1.bit(31)
+}
+
+// Program status register modes
+fn in_a_priviledged_mode() -> bool {
+    // TODO: implement me
+    true
+}
+
+fn current_mode_has_spsr() -> bool {
+    // TODO: implement me
+    true
 }
 
 // Newtype to prevent a register's index being mistaken for it's value.
