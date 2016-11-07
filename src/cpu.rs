@@ -366,6 +366,19 @@ impl Cpu {
         self.cpsr.set_bit(28, value);
     }
 
+    // Program status register modes
+
+    fn in_a_priviledged_mode(&self) -> bool {
+        // Not user mode
+        self.cpsr.bits(0..5) != 0b10000
+    }
+
+    fn current_mode_has_spsr(&self) -> bool {
+        // Not User or System mode
+        let mode = self.cpsr.bits(0..5);
+        mode != 0b10000 && mode != 0b11111
+    }
+
     // Instructions
 
     fn adc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
@@ -586,13 +599,13 @@ unimplemented!();
     fn msr(&mut self, c: bool, x: bool, s: bool, f: bool, r: bool, operand: u32) {
         println!("Instruction: msr");
         if r {
-            if !current_mode_has_spsr() { return; }
+            if !self.current_mode_has_spsr() { return; }
             if c { self.spsr.set_bits(0..8,   operand.bits(0..8)); }
             if x { self.spsr.set_bits(8..16,  operand.bits(8..16)); }
             if s { self.spsr.set_bits(16..24, operand.bits(16..24)); }
             if f { self.spsr.set_bits(24..32, operand.bits(24..32)); }
         } else {
-            let priviledged = in_a_priviledged_mode();
+            let priviledged = self.in_a_priviledged_mode();
             if c && priviledged { self.cpsr.set_bits(0..8,   operand.bits(0..8)); }
             if x && priviledged { self.cpsr.set_bits(8..16,  operand.bits(8..16)); }
             if s && priviledged { self.cpsr.set_bits(16..24, operand.bits(16..24)); }
@@ -1047,17 +1060,6 @@ fn overflow_from_add(operand1: u32, operand2: u32, result: u32) -> bool {
 
 fn overflow_from_sub(operand1: u32, operand2: u32, result: u32) -> bool {
     operand1.bit(31) != operand2.bit(31) && result.bit(31) != operand1.bit(31)
-}
-
-// Program status register modes
-fn in_a_priviledged_mode() -> bool {
-    // TODO: implement me
-    true
-}
-
-fn current_mode_has_spsr() -> bool {
-    // TODO: implement me
-    true
 }
 
 // Newtype to prevent a register's index being mistaken for it's value.
