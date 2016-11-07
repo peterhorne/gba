@@ -214,19 +214,15 @@ impl Cpu {
         let offset = instruction.bits(0..12);
         let address = self.addr_mode_2(i, p, u, w, rn, offset);
 
-        if l {
-            if !p && w {
-                if b { self.ldrbt() } else { self.ldrt() }
-            } else {
-                if b { self.ldrb() } else { self.ldr() }
-            }
-        } else {
-            if !p && w {
-                if b { self.strbt() } else { self.strt() }
-            } else {
-                if b { self.strb() } else { self.str() }
-            }
-        }
+        let t = !p && w;
+        if      l  && t  && b  { self.ldrbt(); }
+        else if l  && t  && !b { self.ldrt();  }
+        else if l  && !t && b  { self.ldrb();  }
+        else if l  && !t && !b { self.ldr();   }
+        else if !l && t  && b  { self.strbt(); }
+        else if !l && t  && !b { self.strt();  }
+        else if !l && !t && b  { self.strb();  }
+        else if !l && !t && !b { self.str();   }
     }
 
     fn multiply_instructions(&mut self, instruction: u32) {
