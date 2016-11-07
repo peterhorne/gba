@@ -14,6 +14,8 @@ pub struct Cpu {
 
     // Saved Program Status Register
     spsr: u32,
+
+    memory: Memory,
 }
 
 impl Cpu {
@@ -22,6 +24,7 @@ impl Cpu {
             registers: Registers::new(),
             cpsr: 0,
             spsr: 0,
+            memory: Memory::new(),
         }
     }
 
@@ -216,13 +219,13 @@ impl Cpu {
 
         let t = !p && w;
         if      l  && t  && b  { self.ldrbt(); }
-        else if l  && t  && !b { self.ldrt();  }
-        else if l  && !t && b  { self.ldrb();  }
-        else if l  && !t && !b { self.ldr();   }
+        else if l  && t  && !b { self.ldrt(); }
+        else if l  && !t && b  { self.ldrb(); }
+        else if l  && !t && !b { self.ldr(rd, address); }
         else if !l && t  && b  { self.strbt(); }
-        else if !l && t  && !b { self.strt();  }
-        else if !l && !t && b  { self.strb();  }
-        else if !l && !t && !b { self.str();   }
+        else if !l && t  && !b { self.strt(); }
+        else if !l && !t && b  { self.strb(); }
+        else if !l && !t && !b { self.str(); }
     }
 
     fn multiply_instructions(&mut self, instruction: u32) {
@@ -523,9 +526,17 @@ unimplemented!();
         unimplemented!();
     }
 
-    fn ldr(&mut self) {
+    fn ldr(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldr");
-        unimplemented!();
+        let value = self.memory.read_word(address);
+        let rotation = address.bits(0..2);
+        let result = value.rotate_right(8 * rotation);
+
+        self.registers[rd] = if rd == Register(15) {
+            result & 0xFFFFFFFC
+        } else {
+            result
+        }
     }
 
     fn ldrb(&mut self) {
@@ -1065,7 +1076,9 @@ pub struct Register(pub u32);
 pub struct Registers([u32; 16]);
 
 impl Registers {
-    fn new() -> Registers { Registers([0; 16]) }
+    fn new() -> Registers {
+        Registers([0; 16])
+    }
 }
 
 impl Index<Register> for Registers {
@@ -1085,5 +1098,30 @@ impl IndexMut<Register> for Registers {
 impl PartialEq for Register {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
+    }
+}
+
+// TODO: memory mapping and alignment
+struct Memory([u8; 2048]);
+
+impl Memory {
+    fn new() -> Memory {
+        Memory([0; 2048])
+    }
+
+    fn read_byte(&self, address: u32) -> u32 {
+        self.0[address as usize] as u32
+    }
+
+    fn read_halfword(&self, address: u32) -> u32 {
+        (self.0[address as usize] as u32)
+        + ((self.0[(address + 1) as usize] as u32) << 8)
+    }
+
+    fn read_word(&self, address: u32) -> u32 {
+        (self.0[address as usize] as u32)
+        + ((self.0[(address + 1) as usize] as u32) << 8)
+        + ((self.0[(address + 2) as usize] as u32) << 16)
+        + ((self.0[(address + 3) as usize] as u32) << 24)
     }
 }
