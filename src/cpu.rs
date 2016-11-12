@@ -220,7 +220,7 @@ impl Cpu {
         let t = !p && w;
         if      l  && t  && b  { self.ldrbt(); }
         else if l  && t  && !b { self.ldrt(); }
-        else if l  && !t && b  { self.ldrb(); }
+        else if l  && !t && b  { self.ldrb(rd, address); }
         else if l  && !t && !b { self.ldr(rd, address); }
         else if !l && t  && b  { self.strbt(); }
         else if !l && t  && !b { self.strt(); }
@@ -539,9 +539,9 @@ unimplemented!();
         }
     }
 
-    fn ldrb(&mut self) {
+    fn ldrb(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrb");
-        unimplemented!();
+        self.registers[rd] = self.memory.read_byte(address);
     }
 
     fn ldrbt(&mut self) {
