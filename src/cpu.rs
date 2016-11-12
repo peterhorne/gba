@@ -222,10 +222,11 @@ impl Cpu {
         else if l  && t  && !b { self.ldrt(rd, address); }
         else if l  && !t && b  { self.ldrb(rd, address); }
         else if l  && !t && !b { self.ldr(rd, address); }
-        else if !l && t  && b  { self.strbt(); }
-        else if !l && t  && !b { self.strt(); }
-        else if !l && !t && b  { self.strb(); }
-        else if !l && !t && !b { self.str(); }
+        else if !l && t  && b  { self.strbt(address, rd); }
+        else if !l && t  && !b { self.strt(address, rd); }
+        else if !l && !t && b  { self.strb(address, rd); }
+        else if !l && !t && !b { self.str(address, rd); }
+        else { unreachable!(); }
     }
 
     fn multiply_instructions(&mut self, instruction: u32) {
@@ -738,19 +739,20 @@ unimplemented!();
         unimplemented!();
     }
 
-    fn str(&mut self) {
+    fn str(&mut self, address: u32, rd: Register) {
         println!("Instruction: str");
-        unimplemented!();
+        self.memory.write_word(address, self.registers[rd]);
     }
 
-    fn strb(&mut self) {
+    fn strb(&mut self, address: u32, rd: Register) {
         println!("Instruction: strb");
-        unimplemented!();
+        self.memory.write_byte(address, self.registers[rd]);
     }
 
-    fn strbt(&mut self) {
+    fn strbt(&mut self, address: u32, rd: Register) {
         println!("Instruction: strbt");
-        unimplemented!();
+        // TODO: signal memory system to act as if CPU is in user mode
+        self.memory.write_byte(address, self.registers[rd]);
     }
 
     fn strh(&mut self, rd: Register, address: u32) {
@@ -758,9 +760,10 @@ unimplemented!();
         unimplemented!();
     }
 
-    fn strt(&mut self) {
+    fn strt(&mut self, address: u32, rd: Register) {
         println!("Instruction: strt");
-        unimplemented!();
+        // TODO: signal memory system to act as if CPU is in user mode
+        self.memory.write_word(address, self.registers[rd]);
     }
 
     fn sub(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
@@ -1127,5 +1130,21 @@ impl Memory {
         + ((self.0[(address + 1) as usize] as u32) << 8)
         + ((self.0[(address + 2) as usize] as u32) << 16)
         + ((self.0[(address + 3) as usize] as u32) << 24)
+    }
+
+    fn write_byte(&mut self, address: u32, value: u32) {
+        self.0[address as usize] = value as u8;
+    }
+
+    fn write_halfword(&mut self, address: u32, value: u32) {
+        self.0[address as usize] = value as u8;
+        self.0[(address + 1) as usize] = (value >> 8) as u8;
+    }
+
+    fn write_word(&mut self, address: u32, value: u32) {
+        self.0[address as usize] = value as u8;
+        self.0[(address + 1) as usize] = (value >> 8) as u8;
+        self.0[(address + 2) as usize] = (value >> 16) as u8;
+        self.0[(address + 3) as usize] = (value >> 24) as u8;
     }
 }
