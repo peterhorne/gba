@@ -489,7 +489,6 @@ impl Cpu {
         self.set_z(result == 0);
         self.set_c(!borrow_from(rn_val, shifter_operand));
         self.set_z(overflow_from_sub(rn_val, shifter_operand, result));
-unimplemented!();
     }
 
     fn eor(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
