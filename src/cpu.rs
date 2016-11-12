@@ -218,7 +218,7 @@ impl Cpu {
         let address = self.addr_mode_2(i, p, u, w, rn, offset);
 
         let t = !p && w;
-        if      l  && t  && b  { self.ldrbt(); }
+        if      l  && t  && b  { self.ldrbt(rd, address); }
         else if l  && t  && !b { self.ldrt(rd, address); }
         else if l  && !t && b  { self.ldrb(rd, address); }
         else if l  && !t && !b { self.ldr(rd, address); }
@@ -544,9 +544,10 @@ unimplemented!();
         self.registers[rd] = self.memory.read_byte(address);
     }
 
-    fn ldrbt(&mut self) {
+    fn ldrbt(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrbt");
-        unimplemented!();
+        // TODO: signal memory system to act as if CPU is in user mode
+        self.registers[rd] = self.memory.read_byte(address);
     }
 
     fn ldrh(&mut self, rd: Register, address: u32) {
