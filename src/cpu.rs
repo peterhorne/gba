@@ -435,9 +435,12 @@ impl Cpu {
 
     fn b(&mut self, l: bool, signed_immed: u32) {
         println!("Instruction: b");
-        if l { self.registers[Register(14)] += 4; }
-        let mask = 1 << (24 - 1);
-        let sign_extended = (signed_immed ^ mask) - mask;
+        if l {
+            let pc_val = self.registers[Register(15)];
+            self.registers[Register(14)] = pc_val + 4;
+        }
+
+        let sign_extended = (((signed_immed as i32) << 8) >> 8) as u32;
         self.registers[Register(15)] += sign_extended << 2;
     }
 
