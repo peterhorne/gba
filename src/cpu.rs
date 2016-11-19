@@ -441,7 +441,8 @@ impl Cpu {
         }
 
         let sign_extended = (((signed_immed as i32) << 8) >> 8) as u32;
-        self.registers[Register(15)] += sign_extended << 2;
+        let target = (sign_extended << 2) + 8;
+        self.registers[Register(15)] += target;
     }
 
     fn bic(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
