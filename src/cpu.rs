@@ -35,9 +35,8 @@ impl Cpu {
     pub fn execute(&mut self, inst: u32) {
         let pc = Register(15);
         let cached_pc = self.regs[pc];
-        let condition = inst.bits(28..32);
 
-        if self.condition_passed(condition) {
+        if self.condition_passed(inst) {
             if inst.bits(24..28) == 0b0000 && inst.bits(4..8) == 0b1001 {
                 self.multiply(inst);
             }
@@ -285,13 +284,13 @@ impl Cpu {
         }
     }
 
-    fn condition_passed(&self, condition: u32) -> bool {
+    fn condition_passed(&self, inst: u32) -> bool {
         let z = self.z();
         let c = self.c();
         let n = self.n();
         let v = self.v();
 
-        match condition {
+        match inst.bits(28..32) {
             // EQ, Equal
             0b0000 => { z },
             // NE, Not equal
