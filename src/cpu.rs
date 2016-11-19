@@ -1112,11 +1112,11 @@ impl PartialEq for Register {
 }
 
 // TODO: memory mapping and alignment
-struct Memory([u8; 2048]);
+struct Memory(Box<[u8; 268_435_456]>);
 
 impl Memory {
     fn new() -> Memory {
-        Memory([0; 2048])
+        Memory(box [0; 268_435_456])
     }
 
     fn read_byte(&self, address: u32) -> u32 {

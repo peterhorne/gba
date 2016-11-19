@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 extern crate core;
 
 mod bit;
