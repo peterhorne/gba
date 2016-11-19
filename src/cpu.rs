@@ -7,7 +7,7 @@ pub struct Cpu {
     // r13:   Stack pointer (SP)
     // r14:   Link register (LR)
     // r15:   Program counter (PC)
-    registers: Registers,
+    regs: Registers,
 
     // Current Program Status Register
     cpsr: u32,
@@ -21,7 +21,7 @@ pub struct Cpu {
 impl Cpu {
     pub fn new() -> Cpu {
         Cpu {
-            registers: Registers::new(),
+            regs: Registers::new(),
             cpsr: 0,
             spsr: 0,
             memory: Memory::new(),
@@ -29,12 +29,12 @@ impl Cpu {
     }
 
     pub fn pc(&self) -> u32 {
-        self.registers[Register(15)]
+        self.regs[Register(15)]
     }
 
     pub fn execute(&mut self, inst: u32) {
         let pc = Register(15);
-        let cached_pc = self.registers[pc];
+        let cached_pc = self.regs[pc];
         let condition = inst.bits(28..32);
 
         if self.condition_passed(condition) {
@@ -89,8 +89,8 @@ impl Cpu {
             }
         }
 
-        if cached_pc == self.registers[pc] {
-            self.registers[pc] += 4;
+        if cached_pc == self.regs[pc] {
+            self.regs[pc] += 4;
         }
     }
 
@@ -380,11 +380,11 @@ impl Cpu {
     fn adc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: adc");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let c_flag = if self.c() { 1 } else { 0 };
         let result_long = rn_val as u64 + shifter_operand as u64 + c_flag as u64;
         let result = result_long as u32;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -399,10 +399,10 @@ impl Cpu {
     fn add(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: add");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result_long = rn_val as u64 + shifter_operand as u64;
         let result = result_long as u32;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -417,8 +417,8 @@ impl Cpu {
     fn and(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: and");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let result = self.registers[rn] & shifter_operand;
-        self.registers[rd] = result;
+        let result = self.regs[rn] & shifter_operand;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -432,21 +432,21 @@ impl Cpu {
     fn b(&mut self, l: bool, signed_immed: u32) {
         println!("Instruction: b");
         if l {
-            let pc_val = self.registers[Register(15)];
-            self.registers[Register(14)] = pc_val + 4;
+            let pc_val = self.regs[Register(15)];
+            self.regs[Register(14)] = pc_val + 4;
         }
 
         let sign_extended = (((signed_immed as i32) << 8) >> 8) as u32;
         let target = (sign_extended << 2) + 8;
-        self.registers[Register(15)] += target;
+        self.regs[Register(15)] += target;
     }
 
     fn bic(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: bic");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result = rn_val & !shifter_operand;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -470,7 +470,7 @@ impl Cpu {
     fn cmn(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: cmn");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result_long = rn_val as u64 + shifter_operand as u64;
         let result = result_long as u32;
 
@@ -483,7 +483,7 @@ impl Cpu {
     fn cmp(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: cmp");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result = rn_val - shifter_operand;
         self.set_n(result.bit(31));
         self.set_z(result == 0);
@@ -494,8 +494,8 @@ impl Cpu {
     fn eor(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: eor");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let result = self.registers[rn] | shifter_operand;
-        self.registers[rd] = result;
+        let result = self.regs[rn] | shifter_operand;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -532,7 +532,7 @@ impl Cpu {
         let rotation = address.bits(0..2);
         let result = value.rotate_right(8 * rotation);
 
-        self.registers[rd] = if rd == Register(15) {
+        self.regs[rd] = if rd == Register(15) {
             result & 0xFFFFFFFC
         } else {
             result
@@ -541,13 +541,13 @@ impl Cpu {
 
     fn ldrb(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrb");
-        self.registers[rd] = self.memory.read_byte(address);
+        self.regs[rd] = self.memory.read_byte(address);
     }
 
     fn ldrbt(&mut self, rd: Register, address: u32) {
         println!("Instruction: ldrbt");
         // TODO: signal memory system to act as if CPU is in user mode
-        self.registers[rd] = self.memory.read_byte(address);
+        self.regs[rd] = self.memory.read_byte(address);
     }
 
     fn ldrh(&mut self, rd: Register, address: u32) {
@@ -570,7 +570,7 @@ impl Cpu {
         // TODO: signal memory system to act as if CPU is in user mode
         let value = self.memory.read_word(address);
         let rotation = address.bits(0..2);
-        self.registers[rd] = value.rotate_right(8 * rotation);
+        self.regs[rd] = value.rotate_right(8 * rotation);
     }
 
     fn mcr(&mut self) {
@@ -586,7 +586,7 @@ impl Cpu {
     fn mov(&mut self, s: bool, rd: Register, operand2: (u32, bool)) {
         println!("Instruction: mov");
         let (shifter_operand, shifter_carry_out) = operand2;
-        self.registers[rd] = shifter_operand;
+        self.regs[rd] = shifter_operand;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -604,7 +604,7 @@ impl Cpu {
 
     fn mrs(&mut self, r: bool, rd: Register) {
         println!("Instruction: mrs");
-        self.registers[rd] = if r { self.spsr } else { self.cpsr };
+        self.regs[rd] = if r { self.spsr } else { self.cpsr };
     }
 
     fn msr(&mut self, c: bool, x: bool, s: bool, f: bool, r: bool, operand: u32) {
@@ -633,7 +633,7 @@ impl Cpu {
         println!("Instruction: mvn");
         let (shifter_operand, shifter_carry_out) = operand2;
         let result = !shifter_operand;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -647,9 +647,9 @@ impl Cpu {
     fn orr(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: orr");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result = rn_val | shifter_operand;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -663,9 +663,9 @@ impl Cpu {
     fn rsb(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: rsb");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result = shifter_operand - rn_val;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -680,10 +680,10 @@ impl Cpu {
     fn rsc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: rsc");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let not_c_flag = if self.c() { 0 } else { 1 };
         let result = shifter_operand - rn_val - not_c_flag;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -698,10 +698,10 @@ impl Cpu {
     fn sbc(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: sbc");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let not_c_flag = if self.c() { 0 } else { 1 };
         let result = rn_val - shifter_operand - not_c_flag;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -740,18 +740,18 @@ impl Cpu {
 
     fn str(&mut self, address: u32, rd: Register) {
         println!("Instruction: str");
-        self.memory.write_word(address, self.registers[rd]);
+        self.memory.write_word(address, self.regs[rd]);
     }
 
     fn strb(&mut self, address: u32, rd: Register) {
         println!("Instruction: strb");
-        self.memory.write_byte(address, self.registers[rd]);
+        self.memory.write_byte(address, self.regs[rd]);
     }
 
     fn strbt(&mut self, address: u32, rd: Register) {
         println!("Instruction: strbt");
         // TODO: signal memory system to act as if CPU is in user mode
-        self.memory.write_byte(address, self.registers[rd]);
+        self.memory.write_byte(address, self.regs[rd]);
     }
 
     fn strh(&mut self, rd: Register, address: u32) {
@@ -762,15 +762,15 @@ impl Cpu {
     fn strt(&mut self, address: u32, rd: Register) {
         println!("Instruction: strt");
         // TODO: signal memory system to act as if CPU is in user mode
-        self.memory.write_word(address, self.registers[rd]);
+        self.memory.write_word(address, self.regs[rd]);
     }
 
     fn sub(&mut self, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: sub");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result = rn_val - shifter_operand;
-        self.registers[rd] = result;
+        self.regs[rd] = result;
 
         if s && rd == Register(15) {
             self.cpsr = self.spsr;
@@ -800,7 +800,7 @@ impl Cpu {
     fn teq(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: teq");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result = rn_val | shifter_operand;
         self.set_n(result.bit(31));
         self.set_z(result == 0);
@@ -810,7 +810,7 @@ impl Cpu {
     fn tst(&mut self, s: bool, rn: Register, operand2: (u32, bool)) {
         println!("Instruction: tst");
         let (shifter_operand, shifter_carry_out) = operand2;
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let result = rn_val & shifter_operand;
         self.set_n(result.bit(31));
         self.set_z(result == 0);
@@ -849,7 +849,7 @@ impl Cpu {
         // Register
         } else if operand.bits(4..12) == 0 {
             let rm = Register(operand.bits(0..4));
-            let rm_val = self.registers[rm];
+            let rm_val = self.regs[rm];
 
             shifter_operand = rm_val;
             shifter_carry_out = self.c();
@@ -859,8 +859,8 @@ impl Cpu {
             let rs = Register(operand.bits(8..12));
             let shift = operand.bits(5..7);
             let rm = Register(operand.bits(0..4));
-            let rs_val = self.registers[rs];
-            let rm_val = self.registers[rm];
+            let rs_val = self.regs[rs];
+            let rm_val = self.regs[rm];
 
             match shift {
                 // Logical shift left
@@ -939,7 +939,7 @@ impl Cpu {
             let shift_imm = operand.bits(7..12);
             let shift = operand.bits(5..7);
             let rm = Register(operand.bits(0..4));
-            let rm_val = self.registers[rm];
+            let rm_val = self.regs[rm];
 
             match shift {
                 // Logical shift left
@@ -1001,7 +1001,7 @@ impl Cpu {
             let shift_imm = offset_12.bits(7..12);
             let shift = offset_12.bits(5..7);
             let rm = Register(offset_12.bits(0..4));
-            let rm_val = self.registers[rm];
+            let rm_val = self.regs[rm];
 
             let index = match shift {
                 0b00 => { // Logical shift left
@@ -1027,15 +1027,15 @@ impl Cpu {
                 _ => unreachable!(),
             };
 
-            self.registers[rm]
+            self.regs[rm]
         } else {
             offset_12
         };
 
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let value = if u { rn_val + offset } else { rn_val - offset };
         let address = if p { value } else { rn_val };
-        if !p || w { self.registers[rn] = value };
+        if !p || w { self.regs[rn] = value };
 
         address
     }
@@ -1046,12 +1046,12 @@ impl Cpu {
         let offset = if i {
             (offset_a << 4) | offset_b
         } else {
-            self.registers[Register(offset_b)] // rm
+            self.regs[Register(offset_b)] // rm
         };
-        let rn_val = self.registers[rn];
+        let rn_val = self.regs[rn];
         let value = if u { rn_val + offset } else { rn_val - offset };
         let address = if p { value } else { rn_val };
-        if !p || w { self.registers[rn] = value };
+        if !p || w { self.regs[rn] = value };
 
         address
     }
