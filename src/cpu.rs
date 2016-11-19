@@ -100,8 +100,8 @@ impl Cpu {
     }
 
     fn branch_and_exchange(&mut self, inst: u32) {
-        let rn = Register(inst.bits(0..4));
-        self.bx(rn);
+        let rm = Register(inst.bits(0..4));
+        self.bx(rm);
     }
 
     fn coprocessor(&mut self, inst: u32) {
@@ -329,6 +329,10 @@ impl Cpu {
 
     // Flags
 
+    fn t(&self) -> bool {
+        self.cpsr.bit(5)
+    }
+
     fn n(&self) -> bool {
         self.cpsr.bit(31)
     }
@@ -343,6 +347,10 @@ impl Cpu {
 
     fn v(&self) -> bool {
         self.cpsr.bit(28)
+    }
+
+    fn set_t(&mut self, value: bool) {
+        self.cpsr.set_bit(5, value);
     }
 
     fn set_n(&mut self, value: bool) {
@@ -456,9 +464,11 @@ impl Cpu {
         }
     }
 
-    fn bx(&mut self, rn: Register) {
+    fn bx(&mut self, rm: Register) {
         println!("Instruction: bx");
-        unimplemented!();
+        let rm_val = self.regs[rm];
+        self.set_t(rm_val.bit(0));
+        self.regs[Register(15)] = rm_val & 0xFFFFFFFE;
     }
 
     fn cdp(&mut self, coprocessor: u32, opcode_1: u32, crd: u32, crn: u32, crm: u32, opcode_2: u32) {
