@@ -38,58 +38,54 @@ impl Cpu {
         let condition = instruction.bits(28..32);
 
         if self.condition_passed(condition) {
-            match instruction.bits(25..28) {
-                0b000 => {
-                    match instruction.bits(4..8) {
-                        0b0000 if !instruction.bit(20) => {
-                            self.status_register_access_instructions(instruction);
-                        },
-                        0b0001 if instruction.bits(4..28) == 0x120001 => {
-                            self.branch_and_exchange(instruction);
-                        },
-                        0b1001 if instruction.bit(24) => {
-                            self.semaphore_instructions(instruction);
-                        },
-                        0b1001 /* !instruction.bit(24) */ => {
-                            self.multiply_instructions(instruction);
-                        },
-                        0b1011 | 0b1101 | 0b1111 => {
-                            self.load_and_store_halfword_or_signed_byte(instruction);
-                        },
-                        _ => {
-                            self.data_processing(instruction);
-                        }
-                    }
-                },
-                0b001 if instruction.bit(20) => {
-                    self.data_processing(instruction);
-                },
-                0b001 /* !instruction.bit(20) */ => {
-                    self.status_register_access_instructions(instruction);
-                },
-                0b011 if instruction.bit(4) => {
-                    panic!("undefined")
-                },
-                0b010 | 0b011 /* !instruction.bit(4) */ => {
-                    self.load_and_store_word_or_unsigned_byte_instructions(instruction);
-                },
-                0b100 => {
-                    self.load_and_store_multiple_instructions(instruction);
-                },
-                0b101 => {
-                    self.branch(instruction);
-                },
-                0b110 => {
-                    self.coprocessor_data_transfer(instruction);
-                },
-                0b111 if instruction.bit(24) => {
-                    self.software_interrupt(instruction);
-                },
-                0b111 /* !instruction.bit(24) */ => {
-                    self.coprocessor_data_operation(instruction);
-                    self.coprocessor_register_transfer(instruction);
-                },
-                _ => { unreachable!(); }
+            if instruction.bits(24..28) == 0b0000 && instruction.bits(4..8) == 0b1001 {
+                self.multiply(instruction);
+            }
+
+            else if instruction.bits(26..28) == 0b00
+                && instruction.bits(23..25) == 0b10
+                && !instruction.bit(20)
+                && !(!instruction.bit(25) && instruction.bit(7) && instruction.bit(4)) {
+
+                let bit25   = instruction.bit(25);
+                let nibble2 = instruction.bits(4..8);
+                let op1     = instruction.bits(21..23);
+
+                if (!bit25 && nibble2 == 0b0000) || bit25 && (op1 == 0b01 || op1 == 0b11) {
+                    self.status_register(instruction);
+                }
+
+                if !bit25 && nibble2 == 0b0001 && op1 == 0b01 {
+                    self.branch_and_exchange(instruction);
+                }
+
+            }
+
+            else if instruction.bits(25..28) == 0b000
+                && instruction.bit(7)
+                && instruction.bit(4)
+                && !(!instruction.bit(24) && instruction.bits(5..7) == 0b00) {
+
+                let bits20to25 = instruction.bits(20..25);
+                let op1        = instruction.bits(5..7);
+
+                if (bits20to25 == 0b10000 || bits20to25 == 0b10100) && op1 == 0b00 {
+                    self.semaphore(instruction);
+                } else {
+                    self.load_and_store_halfword_or_signed_byte(instruction);
+                }
+            }
+
+            else {
+                match instruction.bits(24..28) {
+                    0b0000...0b0011 => { self.data_processing(instruction) },
+                    0b0100...0b0111 => { self.load_and_store_word_or_unsigned_byte_instructions(instruction) },
+                    0b1000...0b1001 => { self.load_and_store_multiple(instruction) },
+                    0b1010...0b1011 => { self.branch(instruction) },
+                    0b1100...0b1110 => { self.coprocessor(instruction) },
+                    0b1111          => { self.software_interrupt(instruction) },
+                    _ => { unreachable!() }
+                }
             }
         }
 
@@ -109,30 +105,30 @@ impl Cpu {
         self.bx(rn);
     }
 
-    fn coprocessor_data_operation(&mut self, instruction: u32) {
-        let opcode_1 = instruction.bits(20..24);
-        let crn = instruction.bits(16..20);
-        let crd = instruction.bits(12..16);
-        let coprocessor = instruction.bits(8..12);
-        let opcode_2 = instruction.bits(5..8);
-        let crm = instruction.bits(0..4);
+    fn coprocessor(&mut self, instruction: u32) {
+        if instruction.bit(25) {
+            if instruction.bit(20) {
+                if instruction.bit(4) {
+                    self.mrc();
+                } else {
+                    let opcode_1 = instruction.bits(20..24);
+                    let crn = instruction.bits(16..20);
+                    let crd = instruction.bits(12..16);
+                    let coprocessor = instruction.bits(8..12);
+                    let opcode_2 = instruction.bits(5..8);
+                    let crm = instruction.bits(0..4);
 
-        self.cdp(coprocessor, opcode_1, crd, crn, crm, opcode_2)
-    }
-
-    fn coprocessor_data_transfer(&mut self, instruction: u32) {
-        if instruction.bit(20) {
-            self.ldc();
+                    self.cdp(coprocessor, opcode_1, crd, crn, crm, opcode_2)
+                }
+            } else {
+                self.mcr();
+            }
         } else {
-            self.stc();
-        }
-    }
-
-    fn coprocessor_register_transfer(&mut self, instruction: u32) {
-        if instruction.bit(20) {
-            self.mrc();
-        } else {
-            self.mcr();
+            if instruction.bit(20) {
+                self.ldc();
+            } else {
+                self.stc();
+            }
         }
     }
 
@@ -195,7 +191,7 @@ impl Cpu {
         }
     }
 
-    fn load_and_store_multiple_instructions(&mut self, instruction: u32) {
+    fn load_and_store_multiple(&mut self, instruction: u32) {
         match (instruction.bit(20), instruction.bit(22), instruction.bit(15)) {
             (true,  true, true)  => self.ldm3(),
             (true,  true, false) => self.ldm2(),
@@ -229,7 +225,7 @@ impl Cpu {
         else { unreachable!(); }
     }
 
-    fn multiply_instructions(&mut self, instruction: u32) {
+    fn multiply(&mut self, instruction: u32) {
         let long = instruction.bit(23);
         let s = instruction.bit(20);
         let rd = Register(instruction.bits(16..20)); // rd_hi (if long)
@@ -254,7 +250,7 @@ impl Cpu {
         }
     }
 
-    fn semaphore_instructions(&mut self, instruction: u32) {
+    fn semaphore(&mut self, instruction: u32) {
         let b = instruction.bit(22);
         let rn = Register(instruction.bits(16..20));
         let rd = Register(instruction.bits(12..16));
@@ -272,7 +268,7 @@ impl Cpu {
         self.swi(immediate);
     }
 
-    fn status_register_access_instructions(&mut self, instruction: u32) {
+    fn status_register(&mut self, instruction: u32) {
         let i = instruction.bit(25);
         let r = instruction.bit(22);
         let f = instruction.bit(19);
