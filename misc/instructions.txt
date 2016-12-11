@@ -1,0 +1,63 @@
+|__3___________________2___________________1___________________0|
+|1_0_9_8_7_6_5_4_3_2_1_0_9_8_7_6_5_4_3_2_1_0_9_8_7_6_5_4_3_2_1_0|
+|                                                               |
+|_cond__|1_0_1|L|________________signed_immed_24________________| B / BL
+|_cond__|0_0_0_1_0_0_1_0|__sbo__|__sbo__|__sbo__|0_0_0_1|__rm___| BX
+
+|_cond__|0_0|I|0_0_0_0|S|__rn___|__rd___|____shifter_operand____| AND
+|_cond__|0_0|I|0_0_0_1|S|__rn___|__rd___|____shifter_operand____| EOR
+|_cond__|0_0|I|0_0_1_0|S|__rn___|__rd___|____shifter_operand____| SUB
+|_cond__|0_0|I|0_0_1_1|S|__rn___|__rd___|____shifter_operand____| RSB
+|_cond__|0_0|I|0_1_0_0|S|__rn___|__rd___|____shifter_operand____| ADD
+|_cond__|0_0|I|0_1_0_1|S|__rn___|__rd___|____shifter_operand____| ADC
+|_cond__|0_0|I|0_1_1_0|S|__rn___|__rd___|____shifter_operand____| SBC
+|_cond__|0_0|I|0_1_1_1|S|__rn___|__rd___|____shifter_operand____| RSC
+|_cond__|0_0|I|1_0_0_0|1|__rn___|__sbz__|____shifter_operand____| TST
+|_cond__|0_0|I|1_0_0_1|1|__rn___|__sbz__|____shifter_operand____| TEQ
+|_cond__|0_0|I|1_0_1_0|1|__rn___|__sbz__|____shifter_operand____| CMP
+|_cond__|0_0|I|1_0_1_1|1|__rn___|__sbz__|____shifter_operand____| CMN
+|_cond__|0_0|I|1_1_0_0|S|__rn___|__rd___|____shifter_operand____| ORR
+|_cond__|0_0|I|1_1_0_1|S|__sbz__|__rd___|____shifter_operand____| MOV
+|_cond__|0_0|I|1_1_1_0|S|__rn___|__rd___|____shifter_operand____| BIC
+|_cond__|0_0|I|1_1_1_1|S|__sbz__|__rd___|____shifter_operand____| MVN
+
+|_cond__|0_0_0_0_0_0_1|S|__rd___|__rn___|__rs___|1_0_0_1|__rm___| MLA
+|_cond__|0_0_0_0_0_0_0|S|__rd___|__sbz__|__rs___|1_0_0_1|__rm___| MUL
+|_cond__|0_0_0_0_1_1_1|S|_rd_hi_|_rd_lo_|__rs___|1_0_0_1|__rm___| SMLAL
+|_cond__|0_0_0_0_1_1_0|S|_rd_hi_|_rd_lo_|__rs___|1_0_0_1|__rm___| SMULL
+|_cond__|0_0_0_0_1_0_1|S|_rd_hi_|_rd_lo_|__rs___|1_0_0_1|__rm___| UMLAL
+|_cond__|0_0_0_0_1_0_0|S|_rd_hi_|_rd_lo_|__rs___|1_0_0_1|__rm___| UMULL
+
+|_cond__|0_0_0_1_0|R|0_0|__sbo__|__rd___|__sbz__|__sbz__|__sbz__| MRS
+|_cond__|0_0_1_1_0|R|1_0|fld_msk|__sbo__|rot_imm|8_bit_immediate| MSR (Immediate)
+|_cond__|0_0_0_1_0|R|1_0|fld_msk|__sbo__|__sbz__|0_0_0_0|__rm___| MSR (Register)
+
+|_cond__|0_1|I|P|U|0|W|1|__rn___|__rd___|_______addr_mode_______| LDR
+|_cond__|0_1|I|P|U|1|W|1|__rn___|__rd___|_______addr_mode_______| LDRB
+|_cond__|0_1|I|0|U|1_1_1|__rn___|__rd___|_______addr_mode_______| LDRBT
+|_cond__|0_1|I|0|U|0_1_1|__rn___|__rd___|_______addr_mode_______| LDRT
+|_cond__|0_1|I|P|U|0|W|0|__rn___|__rd___|_______addr_mode_______| STR
+|_cond__|0_1|I|P|U|1|W|0|__rn___|__rd___|_______addr_mode_______| STRB
+|_cond__|0_1|I|0|U|1_1_0|__rn___|__rd___|_______addr_mode_______| STRBT
+|_cond__|0_1|I|0|U|0_1_0|__rn___|__rd___|_______addr_mode_______| STRT
+|_cond__|0_0_0|P|U|I|W|1|__rn___|__rd___|addr_mo|1_0_1_1|addr_mo| LDRH
+|_cond__|0_0_0|P|U|I|W|1|__rn___|__rd___|addr_mo|1_1_0_1|addr_mo| LDRSB
+|_cond__|0_0_0|P|U|I|W|1|__rn___|__rd___|addr_mo|1_1_1_1|addr_mo| LDRSH
+|_cond__|0_0_0|P|U|I|W|0|__rn___|__rd___|addr_mo|1_0_1_1|addr_mo| STRH
+
+|_cond__|1_0_0|P|U|0|W|1|__rn___|_________register_list_________| LDM1
+|_cond__|1_0_0|P|U|1_0_1|__rn___|0|_______register_list_________| LDM2
+|_cond__|1_0_0|P|U|1|W|1|__rn___|1|_______register_list_________| LDM3
+|_cond__|1_0_0|P|U|0|W|0|__rn___|_________register_list_________| STM1
+|_cond__|1_0_0|P|U|1_0_0|__rn___|_________register_list_________| STM2
+
+|_cond__|0_0_0_1_0_0_0_0|__rn___|__rd___|__sbz__|1_0_0_1|__rm___| SWP
+|_cond__|0_0_0_1_0_1_0_0|__rn___|__rd___|__sbz__|1_0_0_1|__rm___| SWPB
+
+|_cond__|1_1_1_1|___________________immed_24____________________| SWI
+
+|_cond__|1_1_1_0|_op1_|1|__crn__|__crd__|cp_num_|_op2_|0|__crm__| CDP
+|_cond__|1_1_0|P|U|N|W|1|__rn___|__crd__|cp_num_|8bit_wrd_offset| LDC
+|_cond__|1_1_1_0|_op1_|0|__crn__|__rd___|cp_num_|_op2_|1|__crm__| MCR
+|_cond__|1_1_1_0|_op1_|1|__crn__|__rd___|cp_num_|_op2_|1|__crm__| MRC
+|_cond__|1_1_0|P|U|N|W|0|__rn___|__crd__|cp_num_|8bit_wrd_offset| STC
