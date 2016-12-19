@@ -1,4 +1,5 @@
 use bit::{Bit, Bits, SetBit, SetBits};
+use core::ops::Range;
 use std::ops::{Index, IndexMut};
 
 pub struct Cpu {
@@ -10,10 +11,10 @@ pub struct Cpu {
     pub regs: Registers,
 
     // Current Program Status Register
-    pub cpsr: u32,
+    pub cpsr: ProgramStatusRegister,
 
     // Saved Program Status Register
-    pub spsr: u32,
+    pub spsr: ProgramStatusRegister,
 
     pub memory: Memory,
 }
@@ -22,8 +23,8 @@ impl Cpu {
     pub fn new() -> Cpu {
         Cpu {
             regs: Registers::new(),
-            cpsr: 0,
-            spsr: 0,
+            cpsr: ProgramStatusRegister::new(),
+            spsr: ProgramStatusRegister::new(),
             memory: Memory::new(),
         }
     }
@@ -31,62 +32,94 @@ impl Cpu {
     pub fn pc(&self) -> u32 {
         self.regs[Register(15)]
     }
+}
 
-    // Flags
+#[derive(Clone, Copy)]
+pub struct ProgramStatusRegister(u32);
 
-    pub fn t(&self) -> bool {
-        self.cpsr.bit(5)
+impl ProgramStatusRegister {
+    fn new() -> ProgramStatusRegister {
+        ProgramStatusRegister(0x1F)
     }
 
-    pub fn n(&self) -> bool {
-        self.cpsr.bit(31)
+    fn mode(&self) -> ProgramStatusRegisterMode {
+        match self.0.bits(0..5) {
+            0b10000 => { ProgramStatusRegisterMode::User },
+            0b10001 => { ProgramStatusRegisterMode::FIQ },
+            0b10010 => { ProgramStatusRegisterMode::IRQ },
+            0b10011 => { ProgramStatusRegisterMode::Supervisor },
+            0b10111 => { ProgramStatusRegisterMode::Abort },
+            0b11011 => { ProgramStatusRegisterMode::Undefined },
+            0b11111 => { ProgramStatusRegisterMode::System },
+            _       => { panic!("unpredictable!") },
+        }
     }
 
-    pub fn z(&self) -> bool {
-        self.cpsr.bit(30)
-    }
-
-    pub fn c(&self) -> bool {
-        self.cpsr.bit(29)
-    }
-
-    pub fn v(&self) -> bool {
-        self.cpsr.bit(28)
-    }
-
-    pub fn set_t(&mut self, value: bool) {
-        self.cpsr.set_bit(5, value);
-    }
-
-    pub fn set_n(&mut self, value: bool) {
-        self.cpsr.set_bit(31, value);
-    }
-
-    pub fn set_z(&mut self, value: bool) {
-        self.cpsr.set_bit(30, value);
-    }
-
-    pub fn set_c(&mut self, value: bool) {
-        self.cpsr.set_bit(29, value);
-    }
-
-    pub fn set_v(&mut self, value: bool) {
-        self.cpsr.set_bit(28, value);
+    pub fn to_bits(&self) -> u32 {
+        self.0
     }
 
     // Program status register modes
 
-    pub fn in_a_priviledged_mode(&self) -> bool {
-        // Not user mode
-        self.cpsr.bits(0..5) != 0b10000
+    pub fn is_priviledged(&self) -> bool {
+        self.mode() != ProgramStatusRegisterMode::User
     }
 
-    pub fn current_mode_has_spsr(&self) -> bool {
-        // Not User or System mode
-        let mode = self.cpsr.bits(0..5);
-        mode != 0b10000 && mode != 0b11111
+    pub fn has_spsr(&self) -> bool {
+        self.mode() != ProgramStatusRegisterMode::User
+            && self.mode() != ProgramStatusRegisterMode::System
+    }
+
+    // Flags
+
+    pub fn t(&self) -> bool {
+        self.0.bit(5)
+    }
+
+    pub fn n(&self) -> bool {
+        self.0.bit(31)
+    }
+
+    pub fn z(&self) -> bool {
+        self.0.bit(30)
+    }
+
+    pub fn c(&self) -> bool {
+        self.0.bit(29)
+    }
+
+    pub fn v(&self) -> bool {
+        self.0.bit(28)
+    }
+
+    pub fn set_t(&mut self, value: bool) {
+        self.0.set_bit(5, value);
+    }
+
+    pub fn set_n(&mut self, value: bool) {
+        self.0.set_bit(31, value);
+    }
+
+    pub fn set_z(&mut self, value: bool) {
+        self.0.set_bit(30, value);
+    }
+
+    pub fn set_c(&mut self, value: bool) {
+        self.0.set_bit(29, value);
+    }
+
+    pub fn set_v(&mut self, value: bool) {
+        self.0.set_bit(28, value);
+    }
+
+    pub fn set_bits(&mut self, range: Range<u8>, value: u32) {
+        self.0.set_bits(range, value);
     }
 }
+
+#[derive(PartialEq)]
+enum ProgramStatusRegisterMode {
+    User, FIQ, IRQ, Supervisor, Abort, Undefined, System }
 
 // Newtype to prevent a register's index being mistaken for it's value.
 #[derive(Clone, Copy)]

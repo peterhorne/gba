@@ -137,10 +137,10 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
 }
 
 fn condition_passed(cpu: &Cpu, condition: Condition) -> bool {
-    let z = cpu.z();
-    let c = cpu.c();
-    let n = cpu.n();
-    let v = cpu.v();
+    let z = cpu.cpsr.z();
+    let c = cpu.cpsr.c();
+    let n = cpu.cpsr.n();
+    let v = cpu.cpsr.v();
 
     match condition {
         Condition::Eq => {  z },
@@ -168,7 +168,7 @@ fn adc(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     println!("Instruction: adc");
     let (shifter_operand, shifter_carry_out) = operand2;
     let rn_val = cpu.regs[rn];
-    let c_flag = if cpu.c() { 1 } else { 0 };
+    let c_flag = if cpu.cpsr.c() { 1 } else { 0 };
     let result_long = rn_val as u64 + shifter_operand as u64 + c_flag as u64;
     let result = result_long as u32;
     cpu.regs[rd] = result;
@@ -176,10 +176,10 @@ fn adc(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(carry_from(result_long));
-        cpu.set_v(overflow_from_add(rn_val, shifter_operand, result));
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(carry_from(result_long));
+        cpu.cpsr.set_v(overflow_from_add(rn_val, shifter_operand, result));
     }
 }
 
@@ -194,10 +194,10 @@ fn add(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(carry_from(result_long));
-        cpu.set_v(overflow_from_add(rn_val, shifter_operand, result));
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(carry_from(result_long));
+        cpu.cpsr.set_v(overflow_from_add(rn_val, shifter_operand, result));
     }
 }
 
@@ -210,9 +210,9 @@ fn and(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(shifter_carry_out);
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(shifter_carry_out);
     }
 }
 
@@ -238,16 +238,16 @@ fn bic(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(shifter_carry_out);
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(shifter_carry_out);
     }
 }
 
 fn bx(cpu: &mut Cpu, rm: Register) {
     println!("Instruction: bx");
     let rm_val = cpu.regs[rm];
-    cpu.set_t(rm_val.bit(0));
+    cpu.cpsr.set_t(rm_val.bit(0));
     cpu.regs[Register(15)] = rm_val & 0xFFFFFFFE;
 }
 
@@ -264,10 +264,10 @@ fn cmn(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
     let result_long = rn_val as u64 + shifter_operand as u64;
     let result = result_long as u32;
 
-    cpu.set_n(result.bit(31));
-    cpu.set_z(result == 0);
-    cpu.set_c(carry_from(result_long));
-    cpu.set_z(overflow_from_add(rn_val, shifter_operand, result));
+    cpu.cpsr.set_n(result.bit(31));
+    cpu.cpsr.set_z(result == 0);
+    cpu.cpsr.set_c(carry_from(result_long));
+    cpu.cpsr.set_z(overflow_from_add(rn_val, shifter_operand, result));
 }
 
 fn cmp(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
@@ -275,10 +275,10 @@ fn cmp(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
     let (shifter_operand, shifter_carry_out) = operand2;
     let rn_val = cpu.regs[rn];
     let result = rn_val - shifter_operand;
-    cpu.set_n(result.bit(31));
-    cpu.set_z(result == 0);
-    cpu.set_c(!borrow_from(rn_val, shifter_operand));
-    cpu.set_z(overflow_from_sub(rn_val, shifter_operand, result));
+    cpu.cpsr.set_n(result.bit(31));
+    cpu.cpsr.set_z(result == 0);
+    cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand));
+    cpu.cpsr.set_z(overflow_from_sub(rn_val, shifter_operand, result));
 }
 
 fn eor(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
@@ -290,9 +290,9 @@ fn eor(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(shifter_carry_out);
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(shifter_carry_out);
     }
 }
 
@@ -381,9 +381,9 @@ fn mov(cpu: &mut Cpu, s: bool, rd: Register, operand2: (u32, bool)) {
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(shifter_operand.bit(31));
-        cpu.set_z(shifter_operand == 0);
-        cpu.set_c(shifter_carry_out);
+        cpu.cpsr.set_n(shifter_operand.bit(31));
+        cpu.cpsr.set_z(shifter_operand == 0);
+        cpu.cpsr.set_c(shifter_carry_out);
     }
 }
 
@@ -394,19 +394,19 @@ fn mrc(cpu: &mut Cpu) {
 
 fn mrs(cpu: &mut Cpu, r: bool, rd: Register) {
     println!("Instruction: mrs");
-    cpu.regs[rd] = if r { cpu.spsr } else { cpu.cpsr };
+    cpu.regs[rd] = if r { cpu.spsr.to_bits() } else { cpu.cpsr.to_bits() };
 }
 
 fn msr(cpu: &mut Cpu, c: bool, x: bool, s: bool, f: bool, r: bool, operand: u32) {
     println!("Instruction: msr");
     if r {
-        if !cpu.current_mode_has_spsr() { return; }
+        if !cpu.cpsr.has_spsr() { return; }
         if c { cpu.spsr.set_bits(0..8,   operand.bits(0..8)); }
         if x { cpu.spsr.set_bits(8..16,  operand.bits(8..16)); }
         if s { cpu.spsr.set_bits(16..24, operand.bits(16..24)); }
         if f { cpu.spsr.set_bits(24..32, operand.bits(24..32)); }
     } else {
-        let priviledged = cpu.in_a_priviledged_mode();
+        let priviledged = cpu.cpsr.is_priviledged();
         if c && priviledged { cpu.cpsr.set_bits(0..8,   operand.bits(0..8)); }
         if x && priviledged { cpu.cpsr.set_bits(8..16,  operand.bits(8..16)); }
         if s && priviledged { cpu.cpsr.set_bits(16..24, operand.bits(16..24)); }
@@ -428,9 +428,9 @@ fn mvn(cpu: &mut Cpu, s: bool, rd: Register, operand2: (u32, bool)) {
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(shifter_carry_out);
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(shifter_carry_out);
     }
 }
 
@@ -444,9 +444,9 @@ fn orr(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(shifter_carry_out);
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(shifter_carry_out);
     }
 }
 
@@ -460,10 +460,10 @@ fn rsb(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(!borrow_from(shifter_operand, rn_val));
-        cpu.set_v(overflow_from_sub(shifter_operand, rn_val, result));
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(!borrow_from(shifter_operand, rn_val));
+        cpu.cpsr.set_v(overflow_from_sub(shifter_operand, rn_val, result));
     }
 }
 
@@ -471,17 +471,17 @@ fn rsc(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     println!("Instruction: rsc");
     let (shifter_operand, shifter_carry_out) = operand2;
     let rn_val = cpu.regs[rn];
-    let not_c_flag = if cpu.c() { 0 } else { 1 };
+    let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
     let result = shifter_operand - rn_val - not_c_flag;
     cpu.regs[rd] = result;
 
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(!borrow_from(shifter_operand, rn_val + not_c_flag));
-        cpu.set_v(overflow_from_sub(shifter_operand, rn_val + not_c_flag, result));
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(!borrow_from(shifter_operand, rn_val + not_c_flag));
+        cpu.cpsr.set_v(overflow_from_sub(shifter_operand, rn_val + not_c_flag, result));
     }
 }
 
@@ -489,17 +489,17 @@ fn sbc(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     println!("Instruction: sbc");
     let (shifter_operand, shifter_carry_out) = operand2;
     let rn_val = cpu.regs[rn];
-    let not_c_flag = if cpu.c() { 0 } else { 1 };
+    let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
     let result = rn_val - shifter_operand - not_c_flag;
     cpu.regs[rd] = result;
 
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(!borrow_from(rn_val, shifter_operand + not_c_flag));
-        cpu.set_v(overflow_from_sub(rn_val, shifter_operand + not_c_flag, result));
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand + not_c_flag));
+        cpu.cpsr.set_v(overflow_from_sub(rn_val, shifter_operand + not_c_flag, result));
     }
 }
 
@@ -565,10 +565,10 @@ fn sub(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)
     if s && rd == Register(15) {
         cpu.cpsr = cpu.spsr;
     } else if s {
-        cpu.set_n(result.bit(31));
-        cpu.set_z(result == 0);
-        cpu.set_c(!borrow_from(rn_val, shifter_operand));
-        cpu.set_v(overflow_from_sub(rn_val, shifter_operand, result));
+        cpu.cpsr.set_n(result.bit(31));
+        cpu.cpsr.set_z(result == 0);
+        cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand));
+        cpu.cpsr.set_v(overflow_from_sub(rn_val, shifter_operand, result));
     }
 }
 
@@ -592,9 +592,9 @@ fn teq(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
     let (shifter_operand, shifter_carry_out) = operand2;
     let rn_val = cpu.regs[rn];
     let result = rn_val | shifter_operand;
-    cpu.set_n(result.bit(31));
-    cpu.set_z(result == 0);
-    cpu.set_c(shifter_carry_out);
+    cpu.cpsr.set_n(result.bit(31));
+    cpu.cpsr.set_z(result == 0);
+    cpu.cpsr.set_c(shifter_carry_out);
 }
 
 fn tst(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
@@ -602,9 +602,9 @@ fn tst(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
     let (shifter_operand, shifter_carry_out) = operand2;
     let rn_val = cpu.regs[rn];
     let result = rn_val & shifter_operand;
-    cpu.set_n(result.bit(31));
-    cpu.set_z(result == 0);
-    cpu.set_c(shifter_carry_out);
+    cpu.cpsr.set_n(result.bit(31));
+    cpu.cpsr.set_z(result == 0);
+    cpu.cpsr.set_c(shifter_carry_out);
 }
 
 fn umlal(cpu: &mut Cpu, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
@@ -632,7 +632,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
 
         shifter_operand = immed_8.rotate_right(rotate_imm * 2);
         shifter_carry_out = if rotate_imm == 0 {
-            cpu.c()
+            cpu.cpsr.c()
         } else {
             shifter_operand.bit(31)
         };
@@ -643,7 +643,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
         let rm_val = cpu.regs[rm];
 
         shifter_operand = rm_val;
-        shifter_carry_out = cpu.c();
+        shifter_carry_out = cpu.cpsr.c();
 
     // Register shift
     } else if operand.bit(4) {
@@ -659,7 +659,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
                 let part = rs_val.bits(0..8) as u8;
                 if part == 0 {
                     shifter_operand = rm_val;
-                    shifter_carry_out = cpu.c();
+                    shifter_carry_out = cpu.cpsr.c();
                 } else if part < 32 {
                     shifter_operand = rm_val << part;
                     shifter_carry_out = rm_val.bit(32 - part);
@@ -677,7 +677,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
                 let part = rs_val.bits(0..8) as u8;
                 if part == 0 {
                     shifter_operand = rm_val;
-                    shifter_carry_out = cpu.c();
+                    shifter_carry_out = cpu.cpsr.c();
                 } else if part < 32 {
                     shifter_operand = rm_val >> part;
                     shifter_carry_out = rm_val.bit(part - 1);
@@ -695,7 +695,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
                 let part = rs_val.bits(0..8) as u8;
                 if part == 0 {
                     shifter_operand = rm_val;
-                    shifter_carry_out = cpu.c();
+                    shifter_carry_out = cpu.cpsr.c();
                 } else if part < 32 {
                     shifter_operand = (rm_val as i32 >> part) as u32;
                     shifter_carry_out = rm_val.bit(part - 1);
@@ -712,7 +712,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
 
                 if part == 0 {
                     shifter_operand = rm_val;
-                    shifter_carry_out = cpu.c();
+                    shifter_carry_out = cpu.cpsr.c();
                 } else if part2 == 0 {
                     shifter_operand = rm_val;
                     shifter_carry_out = rm_val.bit(31);
@@ -737,7 +737,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
             0b00 => {
                 if shift_imm == 0 {
                     shifter_operand = rm_val;
-                    shifter_carry_out = cpu.c();
+                    shifter_carry_out = cpu.cpsr.c();
                 } else {
                     shifter_operand = rm_val << shift_imm;
                     shifter_carry_out = rm_val.bit(32 - shift_imm as u8);
@@ -770,7 +770,7 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
             0b11 => {
                 if shift_imm == 0 {
                     // Rotate right with extend
-                    let c_flag = if cpu.c() { 1 } else { 0 };
+                    let c_flag = if cpu.cpsr.c() { 1 } else { 0 };
                     shifter_operand = (c_flag << 31) | (rm_val >> 1);
                     shifter_carry_out = rm_val.bit(0);
                 } else {
@@ -812,7 +812,7 @@ fn addr_mode_2(cpu: &mut Cpu, address: AddressingMode2) -> u32 {
             },
             0b11 => {
                 if shift_imm == 0 { // Rotate right with extend
-                    (if cpu.c() { 1 } else { 0 }) << 31 | rm_val >> 1
+                    (if cpu.cpsr.c() { 1 } else { 0 }) << 31 | rm_val >> 1
                 } else { // Rotate right
                     rm_val.rotate_right(shift_imm)
                 }
