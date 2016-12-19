@@ -1,0 +1,80 @@
+0b00000000 ->
+0b01000110 = Data Processing
+0b01000111 = Branch
+0b01001000 ->
+0b10011111 = Load and Store Register
+0b10100000 ->
+0b10110001 = Data Processing
+0b10110100 ->
+0b11001111 = Load and Store Multiple
+0b10111110 = Exception (overrides load and store multiple)
+0b11010000 ->
+0b11111111 = Branch
+0b11011111 = Exception (overrides branch)
+
+|__________1___________________0|
+|5_4_3_2_1_0_9_8_7_6_5_4_3_2_1_0|
+|                               |
+|0_0_0_0_0|___imm5__|__rm_|__rd_| LSL(1)      Data Processing
+|0_0_0_0_1|___imm5__|__rm_|__rd_| LSR(1)      Data Processing
+|0_0_0_1_0|___imm5__|__rm_|__rd_| ASR(1)      Data Processing
+|0_0_0_1_1_0_0|__rm_|__rn_|__rd_| ADD(3)      Data Processing
+|0_0_0_1_1_0_1|__rm_|__rn_|__rd_| SUB(3)      Data Processing
+|0_0_0_1_1_1_0_0_0_0|__rn_|__rd_| MOV(2)      Data Processing
+|0_0_0_1_1_1_0|_imm3|__rn_|__rd_| ADD(1)      Data Processing
+|0_0_0_1_1_1_1|_imm3|__rn_|__rd_| SUB(1)      Data Processing
+|0_0_1_0_0|__rd_|______imm8_____| MOV(1)      Data Processing
+|0_0_1_0_1|__rn_|______imm8_____| CMP(1)      Data Processing
+|0_0_1_1_0|__rd_|______imm8_____| ADD(2)      Data Processing
+|0_0_1_1_1|__rd_|______imm8_____| SUB(2)      Data Processing
+|0_1_0_0_0_0_0_0_0_0|__rm_|__rd_| AND         Data Processing
+|0_1_0_0_0_0_0_0_0_1|__rm_|__rd_| EOR         Data Processing
+|0_1_0_0_0_0_0_0_1_0|__rs_|__rd_| LSL(2)      Data Processing
+|0_1_0_0_0_0_0_0_1_1|__rs_|__rd_| LSR(2)      Data Processing
+|0_1_0_0_0_0_0_1_0_0|__rs_|__rd_| ASR(2)      Data Processing
+|0_1_0_0_0_0_0_1_0_1|__rm_|__rd_| ADC         Data Processing
+|0_1_0_0_0_0_0_1_1_0|__rm_|__rd_| SBC         Data Processing
+|0_1_0_0_0_0_0_1_1_1|__rs_|__rd_| ROR         Data Processing
+|0_1_0_0_0_0_1_0_0_0|__rm_|__rn_| TST         Data Processing
+|0_1_0_0_0_0_1_0_0_1|__rm_|__rd_| NEG         Data Processing
+|0_1_0_0_0_0_1_0_1_0|__rm_|__rn_| CMP(2)      Data Processing
+|0_1_0_0_0_0_1_0_1_1|__rm_|__rn_| CMN         Data Processing
+|0_1_0_0_0_0_1_1_0_0|__rm_|__rd_| ORR         Data Processing
+|0_1_0_0_0_0_1_1_0_1|__rm_|__rd_| MUL         Data Processing
+|0_1_0_0_0_0_1_1_1_0|__rm_|__rd_| BIC         Data Processing
+|0_1_0_0_0_0_1_1_1_1|__rm_|__rd_| MVN         Data Processing
+|0_1_0_0_0_1_0_0|h|h|__rm_|__rd_| ADD(4)      Data Processing
+|0_1_0_0_0_1_0_1|h|h|__rm_|__rn_| CMP(3)      Data Processing
+|0_1_0_0_0_1_1_0|h|h|__rm_|__rd_| MOV(3)      Data Processing
+|0_1_0_0_0_1_1_1_0|h|__rm_|0_0_0| BX          Branch
+|0_1_0_0_0_1_1_1_1|h|__rm_|0_0_0| BLX(2)      Branch
+|0_1_0_0_1|__rd_|______imm8_____| LDR(3)      Load and Store Register
+|0_1_0_1_0_0_0|__rm_|__rn_|__rd_| STR(2)      Load and Store Register
+|0_1_0_1_0_0_1|__rm_|__rn_|__rd_| STRH(2)     Load and Store Register
+|0_1_0_1_0_1_0|__rm_|__rn_|__rd_| STRB(2)     Load and Store Register
+|0_1_0_1_0_1_1|__rm_|__rn_|__rd_| LDRSB       Load and Store Register
+|0_1_0_1_1_0_0|__rm_|__rn_|__rd_| LDR(2)      Load and Store Register
+|0_1_0_1_1_0_1|__rm_|__rn_|__rd_| LDRH(2)     Load and Store Register
+|0_1_0_1_1_1_0|__rm_|__rn_|__rd_| LDRB(2)     Load and Store Register
+|0_1_0_1_1_1_1|__rm_|__rn_|__rd_| LDRSH       Load and Store Register
+|0_1_1_0_0|___imm5__|__rn_|__rd_| STR(1)      Load and Store Register
+|0_1_1_0_1|___imm5__|__rn_|__rd_| LDR(1)      Load and Store Register
+|0_1_1_1_0|___imm5__|__rn_|__rd_| STRB(1)     Load and Store Register
+|0_1_1_1_1|___imm5__|__rn_|__rd_| LDRB(1)     Load and Store Register
+|1_0_0_0_0|___imm5__|__rn_|__rd_| STRH(1)     Load and Store Register
+|1_0_0_0_1|___imm5__|__rn_|__rd_| LDRH(1)     Load and Store Register
+|1_0_0_1_0|__rd_|______imm8_____| STR(3)      Load and Store Register
+|1_0_0_1_1|__rd_|______imm8_____| LDR(4)      Load and Store Register
+|1_0_1_0_0|__rd_|______imm8_____| ADD(5)      Data Processing
+|1_0_1_0_1|__rd_|______imm8_____| ADD(6)      Data Processing
+|1_0_1_1_0_0_0_0_0|____imm7_____| ADD(7)      Data Processing
+|1_0_1_1_0_0_0_0_1|____imm7_____| SUB(4)      Data Processing
+|1_0_1_1_0_1_0|r|_register_list_| PUSH        Load and Store Multiple
+|1_0_1_1_1_1_0|r|_register_list_| POP         Load and Store Multiple
+|1_0_1_1_1_1_1_0|______imm8_____| BKPT        Exception
+|1_1_0_0_0|__rn_|_register_list_| STMIA       Load and Store Multiple
+|1_1_0_0_1|__rn_|_register_list_| LDMIA       Load and Store Multiple
+|1_1_0_1_1_1_1_1|______imm8_____| SWI         Exception
+|1_1_0_1|__cond_|______imm8_____| B(1)        Branch
+|1_1_1_0_0|________imm11________| B(2)        Branch
+|1_1_1|_h_|________off11________| BL, BLX(1)  Branch
