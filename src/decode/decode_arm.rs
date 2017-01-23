@@ -2,7 +2,7 @@ use bit::{Bit, Bits};
 use cpu::Register;
 use instruction::*;
 
-pub fn decode(inst: u32) -> Instruction {
+pub fn decode_arm(inst: u32) -> Instruction {
     let condition = match inst.bits(28..32) {
         0b0000 => { Condition::Eq }, // Equal
         0b0001 => { Condition::Ne }, // Not equal
