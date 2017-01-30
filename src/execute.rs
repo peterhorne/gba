@@ -1,4 +1,5 @@
 use bit::{Bit, Bits, SetBit, SetBits};
+use bus::{Read, Write};
 use cpu::{Cpu, Register};
 use instruction::{
     Condition,
@@ -331,13 +332,13 @@ fn ldr(cpu: &mut Cpu, rd: Register, address: u32) {
 
 fn ldrb(cpu: &mut Cpu, rd: Register, address: u32) {
     println!("Instruction: ldrb");
-    cpu.regs[rd] = cpu.memory.read_byte(address);
+    cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
 }
 
 fn ldrbt(cpu: &mut Cpu, rd: Register, address: u32) {
     println!("Instruction: ldrbt");
     // TODO: signal memory system to act as if CPU is in user mode
-    cpu.regs[rd] = cpu.memory.read_byte(address);
+    cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
 }
 
 fn ldrh(cpu: &mut Cpu, rd: Register, address: u32) {
@@ -535,13 +536,13 @@ fn str(cpu: &mut Cpu, address: u32, rd: Register) {
 
 fn strb(cpu: &mut Cpu, address: u32, rd: Register) {
     println!("Instruction: strb");
-    cpu.memory.write_byte(address, cpu.regs[rd]);
+    cpu.memory.write_byte(address, cpu.regs[rd] as u8);
 }
 
 fn strbt(cpu: &mut Cpu, address: u32, rd: Register) {
     println!("Instruction: strbt");
     // TODO: signal memory system to act as if CPU is in user mode
-    cpu.memory.write_byte(address, cpu.regs[rd]);
+    cpu.memory.write_byte(address, cpu.regs[rd] as u8);
 }
 
 fn strh(cpu: &mut Cpu, rd: Register, address: u32) {

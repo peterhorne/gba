@@ -1,5 +1,9 @@
 use bit::{Bit, Bits, SetBit, SetBits};
+use bus::{Read, Write};
 use core::ops::Range;
+use decode::{decode_arm, decode_thumb};
+use execute::execute;
+use mmu::Mmu;
 use std::ops::{Index, IndexMut};
 
 pub struct Cpu {
@@ -16,21 +20,34 @@ pub struct Cpu {
     // Saved Program Status Register
     pub spsr: ProgramStatusRegister,
 
-    pub memory: Memory,
+    pub memory: Mmu,
 }
 
 impl Cpu {
-    pub fn new() -> Cpu {
+    pub fn new(memory: Mmu) -> Cpu {
         Cpu {
             regs: Registers::new(),
             cpsr: ProgramStatusRegister::new(),
             spsr: ProgramStatusRegister::new(),
-            memory: Memory::new(),
+            memory: memory,
         }
     }
 
     pub fn pc(&self) -> u32 {
         self.regs[Register(15)]
+    }
+
+    pub fn tick(&mut self) {
+        let address = self.pc();
+        let instruction = if self.cpsr.t() {
+            let bits = self.memory.read_halfword(address);
+            decode_thumb(bits)
+        } else {
+            let bits = self.memory.read_word(address);
+            decode_arm(bits)
+        };
+
+        execute(self, instruction);
     }
 }
 
@@ -150,46 +167,5 @@ impl IndexMut<Register> for Registers {
 impl PartialEq for Register {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
-    }
-}
-
-// TODO: memory mapping and alignment
-pub struct Memory(Box<[u8; 268_435_456]>);
-
-impl Memory {
-    fn new() -> Memory {
-        Memory(box [0; 268_435_456])
-    }
-
-    pub fn read_byte(&self, address: u32) -> u32 {
-        self.0[address as usize] as u32
-    }
-
-    pub fn read_halfword(&self, address: u32) -> u32 {
-        (self.0[address as usize] as u32)
-        + ((self.0[(address + 1) as usize] as u32) << 8)
-    }
-
-    pub fn read_word(&self, address: u32) -> u32 {
-        (self.0[address as usize] as u32)
-        + ((self.0[(address + 1) as usize] as u32) << 8)
-        + ((self.0[(address + 2) as usize] as u32) << 16)
-        + ((self.0[(address + 3) as usize] as u32) << 24)
-    }
-
-    pub fn write_byte(&mut self, address: u32, value: u32) {
-        self.0[address as usize] = value as u8;
-    }
-
-    pub fn write_halfword(&mut self, address: u32, value: u32) {
-        self.0[address as usize] = value as u8;
-        self.0[(address + 1) as usize] = (value >> 8) as u8;
-    }
-
-    pub fn write_word(&mut self, address: u32, value: u32) {
-        self.0[address as usize] = value as u8;
-        self.0[(address + 1) as usize] = (value >> 8) as u8;
-        self.0[(address + 2) as usize] = (value >> 16) as u8;
-        self.0[(address + 3) as usize] = (value >> 24) as u8;
     }
 }
