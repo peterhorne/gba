@@ -19,15 +19,16 @@ impl Mmu {
     }
 
     fn map_read(&mut self, address: u32) -> Option<(&mut bus::Read, u32)> {
+        let offset = address & 0xFFFFFF;
         match address {
             // General Internal Memory
-            0x00000000...0x00003FFF => { Some((&mut self.bios, address)) }, // BIOS
+            0x00000000...0x00003FFF => { Some((&mut self.bios, offset)) }, // BIOS
             0x00004000...0x01FFFFFF => { None }, // Unused
             0x02000000...0x0203FFFF => { panic!("WRAM - On-board Work RAM") },
             0x02040000...0x02FFFFFF => { None }, // Unused
             0x03000000...0x03007FFF => { panic!("WRAM - On-chip Work RAM") },
             0x03008000...0x03FFFFFF => { None }, // Unused
-            0x04000000...0x040003FE => { Some((&mut self.raw_memory, address - 0x04000000)) }, // I/O Registers
+            0x04000000...0x040003FE => { panic!("I/O Registers") }, // I/O Registers
             0x04000400...0x04FFFFFF => { None }, // Unused
             // Internal Display Memory
             0x05000000...0x050003FF => { panic!("BG/OBJ Palette RAM") },
@@ -37,9 +38,9 @@ impl Mmu {
             0x07000000...0x070003FF => { panic!("OAM - OBJ Attributes") },
             0x07000400...0x07FFFFFF => { None }, // Unused
             // External Memory (Game Pak)
-            0x08000000...0x09FFFFFF => { Some((&mut self.rom, address - 0x08000000)) }, // ROM
-            0x0A000000...0x0BFFFFFF => { Some((&mut self.rom, address - 0x0A000000)) }, // ROM
-            0x0C000000...0x0DFFFFFF => { Some((&mut self.rom, address - 0x0C000000)) }, // ROM
+            0x08000000...0x09FFFFFF => { Some((&mut self.rom, offset)) }, // ROM
+            0x0A000000...0x0BFFFFFF => { Some((&mut self.rom, offset)) }, // ROM
+            0x0C000000...0x0DFFFFFF => { Some((&mut self.rom, offset)) }, // ROM
             0x0E000000...0x0E00FFFF => { panic!("Game Pak SRAM") },
             0x0E010000...0x0FFFFFFF => { None }, // Unused
             // Unused Memory Area
@@ -48,6 +49,7 @@ impl Mmu {
     }
 
     fn map_write(&mut self, address: u32) -> Option<(&mut bus::Write, u32)> {
+        let offset = address & 0xFFFFFF;
         match address {
             // General Internal Memory
             0x00000000...0x00003FFF => { None }, // BIOS
@@ -56,8 +58,8 @@ impl Mmu {
             0x02040000...0x02FFFFFF => { None }, // Unused
             0x03000000...0x03007FFF => { panic!("WRAM - On-chip Work RAM") },
             0x03008000...0x03FFFFFF => { None }, // Unused
-            0x04000000...0x040003FE => { Some((&mut self.raw_memory, address - 0x04000000)) }, // I/O Registers
-            0x04000400...0x04FFFFFF => { panic!("Not used") },
+            0x04000000...0x040003FE => { panic!("I/O Registers") }, // I/O Registers
+            0x04000400...0x04FFFFFF => { None }, // Unused
             // Internal Display Memory
             0x05000000...0x050003FF => { panic!("BG/OBJ Palette RAM") },
             0x05000400...0x05FFFFFF => { None }, // Unused
