@@ -1,246 +1,113 @@
 use bit::{Bit, Bits};
 use cpu::Register;
-use instruction::*;
+use instruction::{
+    AddressMode1,
+    AddressMode2,
+    AddressMode3,
+    Condition,
+    Instruction
+};
 
 pub fn decode_arm(inst: u32) -> Instruction {
-    let condition = match inst.bits(28..32) {
-        0b0000 => { Condition::Eq }, // Equal
-        0b0001 => { Condition::Ne }, // Not equal
-        0b0010 => { Condition::Cs }, // Carry set/unsigned higher or same
-        0b0011 => { Condition::Cc }, // Carry clear/unsigned lower
-        0b0100 => { Condition::Mi }, // Minus/Negative
-        0b0101 => { Condition::Pl }, // Plus/positive or zero
-        0b0110 => { Condition::Vs }, // Overflow
-        0b0111 => { Condition::Vc }, // No overflow
-        0b1000 => { Condition::Hi }, // Unsigned higher
-        0b1001 => { Condition::Ls }, // Unsigned lower or same
-        0b1010 => { Condition::Ge }, // Signed greater than or equal
-        0b1011 => { Condition::Lt }, // Signed less than
-        0b1100 => { Condition::Gt }, // Signed greater than
-        0b1101 => { Condition::Le }, // Signed less than or equal
-        0b1110 => { Condition::Al }, // Always (unconditional)
-        0b1111 => { Condition::Nv }, // Never
+    let bits = (
+        inst.bit(27) as u8, inst.bit(26) as u8, inst.bit(25) as u8,
+        inst.bit(24) as u8, inst.bit(23) as u8, inst.bit(22) as u8,
+        inst.bit(21) as u8, inst.bit(20) as u8, inst.bit(7) as u8,
+        inst.bit(6) as u8, inst.bit(5) as u8, inst.bit(4) as u8,
+    );
+
+    match bits {
+        (0,0,0,0,0,0,0,_, 1,0,0,1) => { mul(inst) },
+        (0,0,0,0,0,0,1,_, 1,0,0,1) => { mla(inst) },
+        (0,0,0,0,1,0,0,_, 1,0,0,1) => { umull(inst) },
+        (0,0,0,0,1,0,1,_, 1,0,0,1) => { umlal(inst) },
+        (0,0,0,0,1,1,0,_, 1,0,0,1) => { smull(inst) },
+        (0,0,0,0,1,1,1,_, 1,0,0,1) => { smlal(inst) },
+        (0,0,0,1,0,_,0,0, 0,0,0,0) => { mrs(inst) },
+        (0,0,1,1,0,_,1,0, _,_,_,_) => { msr(inst) },
+        (0,0,0,1,0,_,1,0, 0,0,0,0) => { msr(inst) },
+        (0,0,0,1,0,0,1,0, 0,0,0,1) => { bx(inst) },
+        (0,0,0,1,0,0,0,0, 1,0,0,1) => { swp(inst) },
+        (0,0,0,1,0,1,0,0, 1,0,0,1) => { swpb(inst) },
+        (0,0,0,_,_,_,_,1, 1,0,1,1) => { ldrh(inst) },
+        (0,0,0,_,_,_,_,0, 1,0,1,1) => { strh(inst) },
+        (0,0,0,_,_,_,_,1, 1,1,0,1) => { ldrsb(inst) },
+        (0,0,0,_,_,_,_,1, 1,1,1,1) => { ldrsh(inst) },
+        (0,0,_,0,0,0,0,_, _,_,_,_) => { and(inst) },
+        (0,0,_,0,0,0,1,_, _,_,_,_) => { eor(inst) },
+        (0,0,_,0,0,1,0,_, _,_,_,_) => { sub(inst) },
+        (0,0,_,0,0,1,1,_, _,_,_,_) => { rsb(inst) },
+        (0,0,_,0,1,0,0,_, _,_,_,_) => { add(inst) },
+        (0,0,_,0,1,0,1,_, _,_,_,_) => { adc(inst) },
+        (0,0,_,0,1,1,0,_, _,_,_,_) => { sbc(inst) },
+        (0,0,_,0,1,1,1,_, _,_,_,_) => { rsc(inst) },
+        (0,0,_,1,1,0,0,_, _,_,_,_) => { orr(inst) },
+        (0,0,_,1,1,0,1,_, _,_,_,_) => { mov(inst) },
+        (0,0,_,1,1,1,0,_, _,_,_,_) => { bic(inst) },
+        (0,0,_,1,1,1,1,_, _,_,_,_) => { mvn(inst) },
+        (0,0,_,1,0,0,0,1, _,_,_,_) => { tst(inst) },
+        (0,0,_,1,0,0,1,1, _,_,_,_) => { teq(inst) },
+        (0,0,_,1,0,1,0,1, _,_,_,_) => { cmp(inst) },
+        (0,0,_,1,0,1,1,1, _,_,_,_) => { cmn(inst) },
+        (0,1,_,_,_,0,_,1, _,_,_,_) => { ldr(inst) },
+        (0,1,_,_,_,1,_,1, _,_,_,_) => { ldrb(inst) },
+        (0,1,_,_,_,0,_,0, _,_,_,_) => { str(inst) },
+        (0,1,_,_,_,1,_,0, _,_,_,_) => { strb(inst) },
+        (0,1,_,0,_,1,1,1, _,_,_,_) => { ldrbt(inst) },
+        (0,1,_,0,_,0,1,1, _,_,_,_) => { ldrt(inst) },
+        (0,1,_,0,_,1,1,0, _,_,_,_) => { strbt(inst) },
+        (0,1,_,0,_,0,1,0, _,_,_,_) => { strt(inst) },
+        (1,0,0,_,_,0,_,1, _,_,_,_) => { ldm1(inst) },
+        (1,0,0,_,_,1,_,1, _,_,_,_) => { ldm3(inst) },
+        (1,0,0,_,_,0,_,0, _,_,_,_) => { stm1(inst) },
+        (1,0,0,_,_,1,0,1, _,_,_,_) => { ldm2(inst) },
+        (1,0,0,_,_,1,0,0, _,_,_,_) => { stm2(inst) },
+        (1,0,1,_,_,_,_,_, _,_,_,_) => { b(inst) },
+        (1,1,0,_,_,_,_,1, _,_,_,_) => { ldc(inst) },
+        (1,1,0,_,_,_,_,0, _,_,_,_) => { stc(inst) },
+        (1,1,1,0,_,_,_,1, _,_,_,0) => { cdp(inst) },
+        (1,1,1,0,_,_,_,0, _,_,_,1) => { mcr(inst) },
+        (1,1,1,0,_,_,_,1, _,_,_,1) => { mrc(inst) },
+        (1,1,1,1,_,_,_,_, _,_,_,_) => { swi(inst) },
+        _ => { panic!("Unrecognised instruction: {:x}", inst); },
+    }
+}
+
+fn condition(inst: u32) -> Condition {
+    match inst.bits(28..32) {
+        0b0000 => { Condition::Eq },
+        0b0001 => { Condition::Ne },
+        0b0010 => { Condition::Cs },
+        0b0011 => { Condition::Cc },
+        0b0100 => { Condition::Mi },
+        0b0101 => { Condition::Pl },
+        0b0110 => { Condition::Vs },
+        0b0111 => { Condition::Vc },
+        0b1000 => { Condition::Hi },
+        0b1001 => { Condition::Ls },
+        0b1010 => { Condition::Ge },
+        0b1011 => { Condition::Lt },
+        0b1100 => { Condition::Gt },
+        0b1101 => { Condition::Le },
+        0b1110 => { Condition::Al },
+        0b1111 => { Condition::Nv },
         _      => { unreachable!() },
-    };
-
-    // Extended instruction set
-    let operation = if inst.bits(24..28) == 0b0000 && inst.bits(4..8) == 0b1001 {
-        multiply(inst)
-    }
-
-    else if inst.bits(26..28) == 0b00 && inst.bits(23..25) == 0b10 && !inst.bit(20)
-        && (inst.bit(25) || !inst.bit(7) || !inst.bit(4)) {
-
-            let bit25   = inst.bit(25);
-            let nibble2 = inst.bits(4..8);
-            let op1     = inst.bits(21..23);
-
-            if (!bit25 && nibble2 == 0b0000) || bit25 && (op1 == 0b01 || op1 == 0b11) {
-                status_register(inst)
-            } else if !bit25 && nibble2 == 0b0001 && op1 == 0b01 {
-                branch_and_exchange(inst)
-            } else {
-                unreachable!();
-            }
-        }
-
-    else if inst.bits(25..28) == 0b000 && inst.bit(7) && inst.bit(4)
-        && (inst.bit(24) || inst.bits(5..7) != 0b00) {
-
-            let bits20to25 = inst.bits(20..25);
-            let op1        = inst.bits(5..7);
-
-            if (bits20to25 == 0b10000 || bits20to25 == 0b10100) && op1 == 0b00 {
-                semaphore(inst)
-            } else {
-                load_and_store_halfword_or_signed_byte(inst)
-            }
-        }
-
-    // Standard instruction set
-    else {
-        match inst.bits(24..28) {
-            0b0000...0b0011 => { data_processing(inst) },
-            0b0100...0b0111 => { load_and_store_word_or_unsigned_byte(inst) },
-            0b1000...0b1001 => { load_and_store_multiple(inst) },
-            0b1010...0b1011 => { branch(inst) },
-            0b1100...0b1110 => { coprocessor(inst) },
-            0b1111          => { software_interrupt(inst) },
-            _ => { unreachable!() }
-        }
-    };
-
-    Instruction::new(condition, operation)
-}
-
-fn branch(inst: u32) -> Operation {
-    Operation::Branch {
-        l: inst.bit(24),
-        signed_immed: inst.bits(0..24),
     }
 }
 
-fn branch_and_exchange(inst: u32) -> Operation {
-    Operation::BranchAndExchange {
-        rm: Register(inst.bits(0..4))
-    }
-}
-
-fn coprocessor(inst: u32) -> Operation {
-    let bit25 = inst.bit(25);
-    let bit20 = inst.bit(20);
-    let bit4  = inst.bit(4);
-
-    use instruction::CoprocessorOperation::*;
-    let operation =
-        if       bit25 &&  bit20 &&  bit4 { Mrc }
-        else if  bit25 &&  bit20 && !bit4 { Cdp }
-        else if  bit25 && !bit20          { Mcr }
-        else if !bit25 &&  bit20          { Ldc }
-        else if !bit25 && !bit20          { Stc }
-        else { unreachable!() };
-
-    Operation::Coprocessor {
-        operation:   operation,
-        opcode1:     inst.bits(20..24),
-        crn:         inst.bits(16..20),
-        crd:         inst.bits(12..16),
-        coprocessor: inst.bits(8..12),
-        opcode2:     inst.bits(5..8),
-        crm:         inst.bits(0..4),
-    }
-}
-
-fn data_processing(inst: u32) -> Operation {
-    use instruction::DataProcessingOperation::*;
-    let operation = match inst.bits(21..25) {
-        0b0000 => { And },
-        0b0001 => { Eor },
-        0b0010 => { Sub },
-        0b0011 => { Rsb },
-        0b0100 => { Add },
-        0b0101 => { Adc },
-        0b0110 => { Sbc },
-        0b0111 => { Rsc },
-        0b1000 => { Tst },
-        0b1001 => { Teq },
-        0b1010 => { Cmp },
-        0b1011 => { Cmn },
-        0b1100 => { Orr },
-        0b1101 => { Mov },
-        0b1110 => { Bic },
-        0b1111 => { Mvn },
-        _      => { unreachable!() },
-    };
-
-    Operation::DataProcessing {
-        operation: operation,
+fn mul(inst: u32) -> Instruction {
+    Instruction::Mul {
+        condition: condition(inst),
         s: inst.bit(20),
-        rn: Register(inst.bits(16..20)),
-        rd: Register(inst.bits(12..16)),
-        address: AddressingMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        }
+        rd: Register(inst.bits(16..20)),
+        rm: Register(inst.bits(0..4)),
+        rs: Register(inst.bits(8..12)),
     }
 }
 
-fn load_and_store_halfword_or_signed_byte(inst: u32) -> Operation {
-    let l = inst.bit(20);
-
-    use instruction::LoadAndStoreHalfwordOrSignedByteOperation::*;
-    let operation = match inst.bits(4..8) {
-        0b1011 if l  => { Ldrh },
-        0b1011 if !l => { Strh },
-        0b1101       => { Ldrsb },
-        0b1111       => { Ldrsh },
-        _ => unreachable!(),
-    };
-
-    Operation::LoadAndStoreHalfwordOrSignedByte {
-        operation: operation,
-        rd: Register(inst.bits(12..16)),
-        address: AddressingMode3 {
-            p: inst.bit(24),
-            u: inst.bit(23),
-            i: inst.bit(22),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset_a: inst.bits(8..12),
-            offset_b: inst.bits(0..4),
-        }
-    }
-}
-
-fn load_and_store_multiple(inst: u32) -> Operation {
-    let bit22 = inst.bit(22);
-    let bit20 = inst.bit(20);
-    let bit15 = inst.bit(15);
-
-    use instruction::LoadAndStoreMultipleOperation::*;
-    let operation =
-        if       bit20 &&  bit22 &&  bit15 { Ldm3 }
-        else if  bit20 &&  bit22 && !bit15 { Ldm2 }
-        else if  bit20 && !bit22           { Ldm1 }
-        else if !bit20 &&  bit22           { Stm2 }
-        else if !bit20 && !bit22           { Stm1 }
-        else { unreachable!(); };
-
-    Operation::LoadAndStoreMultiple {
-        operation: operation,
-    }
-}
-
-fn load_and_store_word_or_unsigned_byte(inst: u32) -> Operation {
-    let i = inst.bit(25);
-    let p = inst.bit(24);
-    let u = inst.bit(23);
-    let b = inst.bit(22);
-    let w = inst.bit(21);
-    let l = inst.bit(20);
-    let rn = Register(inst.bits(16..20));
-    let rd = Register(inst.bits(12..16));
-    let offset = inst.bits(0..12);
-
-    use instruction::LoadAndStoreWordOrUnsignedByteOperation::*;
-    let t = !p && w;
-    let operation =
-        if      l  && t  && b  { Ldrbt }
-        else if l  && t  && !b { Ldrt }
-        else if l  && !t && b  { Ldrb }
-        else if l  && !t && !b { Ldr }
-        else if !l && t  && b  { Strbt }
-        else if !l && t  && !b { Strt }
-        else if !l && !t && b  { Strb }
-        else if !l && !t && !b { Str }
-        else { unreachable!(); };
-
-    Operation::LoadAndStoreWordOrUnsignedByte {
-        operation: operation,
-        rd: rd,
-        address: AddressingMode2 {
-            i: i,
-            p: p,
-            u: u,
-            w: w,
-            rn: rn,
-            offset: offset,
-        }
-    }
-}
-
-fn multiply(inst: u32) -> Operation {
-    use instruction::MultiplyOperation::*;
-    Operation::Multiply {
-        operation: match inst.bits(21..24) {
-            0b000 | 0b010 => { Mul },
-            0b001 | 0b011 => { Mla },
-            0b100 => { Umull },
-            0b101 => { Umlal },
-            0b110 => { Smull },
-            0b111 => { Smlal },
-            _     => { unreachable!() }
-        },
+fn mla(inst: u32) -> Instruction {
+    Instruction::Mla {
+        condition: condition(inst),
         s: inst.bit(20),
         rd: Register(inst.bits(16..20)),
         rn: Register(inst.bits(12..16)),
@@ -249,36 +116,555 @@ fn multiply(inst: u32) -> Operation {
     }
 }
 
-fn semaphore(inst: u32) -> Operation {
-    Operation::Semaphore {
-        b: inst.bit(22),
-        rn: Register(inst.bits(16..20)),
-        rd: Register(inst.bits(12..16)),
+fn umull(inst: u32) -> Instruction {
+    Instruction::Umull {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rd: Register(inst.bits(16..20)),
+        rn: Register(inst.bits(12..16)),
         rm: Register(inst.bits(0..4)),
-    }
-
-}
-fn software_interrupt(inst: u32) -> Operation {
-    Operation::SoftwareInterrupt {
-        immediate: inst.bits(0..24),
+        rs: Register(inst.bits(8..12)),
     }
 }
 
-fn status_register(inst: u32) -> Operation {
-    use instruction::StatusRegisterOperation::*;
-    let operation = if inst.bit(21) { Msr } else { Mrs };
+fn umlal(inst: u32) -> Instruction {
+    Instruction::Umlal {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rd: Register(inst.bits(16..20)),
+        rn: Register(inst.bits(12..16)),
+        rm: Register(inst.bits(0..4)),
+        rs: Register(inst.bits(8..12)),
+    }
+}
 
-    Operation::StatusRegister {
-        operation: operation,
+fn smull(inst: u32) -> Instruction {
+    Instruction::Smull {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rd: Register(inst.bits(16..20)),
+        rn: Register(inst.bits(12..16)),
+        rm: Register(inst.bits(0..4)),
+        rs: Register(inst.bits(8..12)),
+    }
+}
+
+fn smlal(inst: u32) -> Instruction {
+    Instruction::Smlal {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rd: Register(inst.bits(16..20)),
+        rn: Register(inst.bits(12..16)),
+        rm: Register(inst.bits(0..4)),
+        rs: Register(inst.bits(8..12)),
+    }
+}
+
+fn mrs(inst: u32) -> Instruction {
+    Instruction::Mrs {
+        condition: condition(inst),
+        r: inst.bit(22),
+        rd: Register(inst.bits(12..16)),
+    }
+}
+
+fn msr(inst: u32) -> Instruction {
+    Instruction::Msr {
+        condition: condition(inst),
         r: inst.bit(22),
         f: inst.bit(19),
         s: inst.bit(18),
         x: inst.bit(17),
         c: inst.bit(16),
-        rd: Register(inst.bits(12..16)),
-        address: AddressingMode1 {
+        address: AddressMode1 {
             i: inst.bit(25),
             operand: inst.bits(0..12),
-        }
+        },
+    }
+}
+
+fn bx(inst: u32) -> Instruction {
+    Instruction::Bx {
+        condition: condition(inst),
+        rm: Register(inst.bits(0..4)),
+    }
+}
+
+fn swp(inst: u32) -> Instruction {
+    Instruction::Swp {
+        condition: condition(inst),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        rm: Register(inst.bits(0..4)),
+    }
+}
+
+fn swpb(inst: u32) -> Instruction {
+    Instruction::Swpb {
+        condition: condition(inst),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        rm: Register(inst.bits(0..4)),
+    }
+}
+
+fn ldrh(inst: u32) -> Instruction {
+    Instruction::Ldrh {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode3 {
+            p: inst.bit(24),
+            u: inst.bit(23),
+            i: inst.bit(22),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset_a: inst.bits(8..12),
+            offset_b: inst.bits(0..4),
+        },
+    }
+}
+
+fn strh(inst: u32) -> Instruction {
+    Instruction::Strh {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode3 {
+            p: inst.bit(24),
+            u: inst.bit(23),
+            i: inst.bit(22),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset_a: inst.bits(8..12),
+            offset_b: inst.bits(0..4),
+        },
+    }
+}
+
+fn ldrsb(inst: u32) -> Instruction {
+    Instruction::Ldrsb {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode3 {
+            p: inst.bit(24),
+            u: inst.bit(23),
+            i: inst.bit(22),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset_a: inst.bits(8..12),
+            offset_b: inst.bits(0..4),
+        },
+    }
+}
+
+fn ldrsh(inst: u32) -> Instruction {
+    Instruction::Ldrsh {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode3 {
+            p: inst.bit(24),
+            u: inst.bit(23),
+            i: inst.bit(22),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset_a: inst.bits(8..12),
+            offset_b: inst.bits(0..4),
+        },
+    }
+}
+
+fn and(inst: u32) -> Instruction {
+    Instruction::And {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn eor(inst: u32) -> Instruction {
+    Instruction::Eor {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn sub(inst: u32) -> Instruction {
+    Instruction::Sub {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn rsb(inst: u32) -> Instruction {
+    Instruction::Rsb {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn add(inst: u32) -> Instruction {
+    Instruction::Add {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn adc(inst: u32) -> Instruction {
+    Instruction::Adc {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn sbc(inst: u32) -> Instruction {
+    Instruction::Sbc {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn rsc(inst: u32) -> Instruction {
+    Instruction::Rsc {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn orr(inst: u32) -> Instruction {
+    Instruction::Orr {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn mov(inst: u32) -> Instruction {
+    Instruction::Mov {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn bic(inst: u32) -> Instruction {
+    Instruction::Bic {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn mvn(inst: u32) -> Instruction {
+    Instruction::Mvn {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rd: Register(inst.bits(12..16)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn tst(inst: u32) -> Instruction {
+    Instruction::Tst {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn teq(inst: u32) -> Instruction {
+    Instruction::Teq {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn cmp(inst: u32) -> Instruction {
+    Instruction::Cmp {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn cmn(inst: u32) -> Instruction {
+    Instruction::Cmn {
+        condition: condition(inst),
+        s: inst.bit(20),
+        rn: Register(inst.bits(16..20)),
+        operand2: AddressMode1 {
+            i: inst.bit(25),
+            operand: inst.bits(0..12),
+        },
+    }
+}
+
+fn ldr(inst: u32) -> Instruction {
+    Instruction::Ldr {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn ldrb(inst: u32) -> Instruction {
+    Instruction::Ldrb {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn str(inst: u32) -> Instruction {
+    Instruction::Str {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn strb(inst: u32) -> Instruction {
+    Instruction::Strb {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn ldrbt(inst: u32) -> Instruction {
+    Instruction::Ldrbt {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn ldrt(inst: u32) -> Instruction {
+    Instruction::Ldrt {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn strbt(inst: u32) -> Instruction {
+    Instruction::Strbt {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn strt(inst: u32) -> Instruction {
+    Instruction::Strt {
+        condition: condition(inst),
+        rd: Register(inst.bits(12..16)),
+        address: AddressMode2 {
+            i: inst.bit(25),
+            p: inst.bit(24),
+            u: inst.bit(23),
+            w: inst.bit(21),
+            rn: Register(inst.bits(16..20)),
+            offset: inst.bits(0..12),
+        },
+    }
+}
+
+fn ldm1(inst: u32) -> Instruction {
+    Instruction::Ldm1 {
+        condition: condition(inst),
+    }
+}
+
+fn ldm3(inst: u32) -> Instruction {
+    Instruction::Ldm3 {
+        condition: condition(inst),
+    }
+}
+
+fn stm1(inst: u32) -> Instruction {
+    Instruction::Stm1 {
+        condition: condition(inst),
+    }
+}
+
+fn ldm2(inst: u32) -> Instruction {
+    Instruction::Ldm2 {
+        condition: condition(inst),
+    }
+}
+
+fn stm2(inst: u32) -> Instruction {
+    Instruction::Stm2 {
+        condition: condition(inst),
+    }
+}
+
+fn b(inst: u32) -> Instruction {
+    Instruction::B {
+        condition: condition(inst),
+        l: inst.bit(24),
+        signed_immed: inst.bits(0..24),
+    }
+}
+
+fn ldc(inst: u32) -> Instruction {
+    Instruction::Ldc {
+        condition: condition(inst),
+    }
+}
+
+fn stc(inst: u32) -> Instruction {
+    Instruction::Stc {
+        condition: condition(inst),
+    }
+}
+
+fn cdp(inst: u32) -> Instruction {
+    Instruction::Cdp {
+        condition: condition(inst),
+    }
+}
+
+fn mcr(inst: u32) -> Instruction {
+    Instruction::Mcr {
+        condition: condition(inst),
+    }
+}
+
+fn mrc(inst: u32) -> Instruction {
+    Instruction::Mrc {
+        condition: condition(inst),
+    }
+}
+
+fn swi(inst: u32) -> Instruction {
+    Instruction::Swi {
+        condition: condition(inst),
+        immediate: inst.bits(0..24),
     }
 }

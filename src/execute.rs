@@ -4,133 +4,133 @@ use cpu::{Cpu, Register};
 use instruction::{
     Condition,
     Instruction,
-    Operation,
-    AddressingMode1,
-    AddressingMode2,
-    AddressingMode3
+    AddressMode1,
+    AddressMode2,
+    AddressMode3
 };
 
 pub fn execute(cpu: &mut Cpu, inst: Instruction) {
     let pc = Register(15);
     let cached_pc = cpu.regs[pc];
+    unimplemented!();
 
-    if condition_passed(cpu, inst.condition) {
-        match inst.operation {
-            Operation::Branch { l, signed_immed } => {
-                b(cpu, l, signed_immed);
-            },
+    // if condition_passed(cpu, inst.condition) {
+    //     match inst.operation {
+    //         Operation::Branch { l, signed_immed } => {
+    //             b(cpu, l, signed_immed);
+    //         },
 
-            Operation::BranchAndExchange { rm } => {
-                bx(cpu, rm);
-            },
+    //         Operation::BranchAndExchange { rm } => {
+    //             bx(cpu, rm);
+    //         },
 
-            Operation::Coprocessor { operation, coprocessor, opcode1, opcode2, crd, crn, crm } => {
-                use instruction::CoprocessorOperation::*;
-                match operation {
-                    Cdp => { cdp(cpu, coprocessor, opcode1, opcode2, crd, crn, crm) },
-                    Ldc => { ldc(cpu) },
-                    Mcr => { mcr(cpu) },
-                    Mrc => { mrc(cpu) },
-                    Stc => { stc(cpu) },
-                };
-            },
+    //         Operation::Coprocessor { operation, coprocessor, opcode1, opcode2, crd, crn, crm } => {
+    //             use instruction::CoprocessorOperation::*;
+    //             match operation {
+    //                 Cdp => { cdp(cpu, coprocessor, opcode1, opcode2, crd, crn, crm) },
+    //                 Ldc => { ldc(cpu) },
+    //                 Mcr => { mcr(cpu) },
+    //                 Mrc => { mrc(cpu) },
+    //                 Stc => { stc(cpu) },
+    //             };
+    //         },
 
-            Operation::DataProcessing { operation, s, rn, rd, address } => {
-                let operand2 = addr_mode_1(cpu, address);
-                use instruction::DataProcessingOperation::*;
-                match operation {
-                    And => { and(cpu, s, rd, rn, operand2) },
-                    Eor => { eor(cpu, s, rd, rn, operand2) },
-                    Sub => { sub(cpu, s, rd, rn, operand2) },
-                    Rsb => { rsb(cpu, s, rd, rn, operand2) },
-                    Add => { add(cpu, s, rd, rn, operand2) },
-                    Adc => { adc(cpu, s, rd, rn, operand2) },
-                    Sbc => { sbc(cpu, s, rd, rn, operand2) },
-                    Rsc => { rsc(cpu, s, rd, rn, operand2) },
-                    Tst => { tst(cpu, s,     rn, operand2) },
-                    Teq => { teq(cpu, s,     rn, operand2) },
-                    Cmp => { cmp(cpu, s,     rn, operand2) },
-                    Cmn => { cmn(cpu, s,     rn, operand2) },
-                    Orr => { orr(cpu, s, rd, rn, operand2) },
-                    Mov => { mov(cpu, s, rd,     operand2) },
-                    Bic => { bic(cpu, s, rd, rn, operand2) },
-                    Mvn => { mvn(cpu, s, rd,     operand2) },
-                };
-            },
+    //         Operation::DataProcessing { operation, s, rn, rd, address } => {
+    //             let operand2 = addr_mode_1(cpu, address);
+    //             use instruction::DataProcessingOperation::*;
+    //             match operation {
+    //                 And => { and(cpu, s, rd, rn, operand2) },
+    //                 Eor => { eor(cpu, s, rd, rn, operand2) },
+    //                 Sub => { sub(cpu, s, rd, rn, operand2) },
+    //                 Rsb => { rsb(cpu, s, rd, rn, operand2) },
+    //                 Add => { add(cpu, s, rd, rn, operand2) },
+    //                 Adc => { adc(cpu, s, rd, rn, operand2) },
+    //                 Sbc => { sbc(cpu, s, rd, rn, operand2) },
+    //                 Rsc => { rsc(cpu, s, rd, rn, operand2) },
+    //                 Tst => { tst(cpu, s,     rn, operand2) },
+    //                 Teq => { teq(cpu, s,     rn, operand2) },
+    //                 Cmp => { cmp(cpu, s,     rn, operand2) },
+    //                 Cmn => { cmn(cpu, s,     rn, operand2) },
+    //                 Orr => { orr(cpu, s, rd, rn, operand2) },
+    //                 Mov => { mov(cpu, s, rd,     operand2) },
+    //                 Bic => { bic(cpu, s, rd, rn, operand2) },
+    //                 Mvn => { mvn(cpu, s, rd,     operand2) },
+    //             };
+    //         },
 
-            Operation::LoadAndStoreHalfwordOrSignedByte { operation, rd, address } => {
-                let address = addr_mode_3(cpu, address);
+    //         Operation::LoadAndStoreHalfwordOrSignedByte { operation, rd, address } => {
+    //             let address = addr_mode_3(cpu, address);
 
-                use instruction::LoadAndStoreHalfwordOrSignedByteOperation::*;
-                match operation {
-                    Ldrh  => { ldrh(cpu, rd, address) },
-                    Ldrsb => { ldrsb(cpu, rd, address) },
-                    Ldrsh => { ldrsh(cpu, rd, address) },
-                    Strh  => { strh(cpu, rd, address) },
-                };
-            },
+    //             use instruction::LoadAndStoreHalfwordOrSignedByteOperation::*;
+    //             match operation {
+    //                 Ldrh  => { ldrh(cpu, rd, address) },
+    //                 Ldrsb => { ldrsb(cpu, rd, address) },
+    //                 Ldrsh => { ldrsh(cpu, rd, address) },
+    //                 Strh  => { strh(cpu, rd, address) },
+    //             };
+    //         },
 
-            Operation::LoadAndStoreMultiple { operation } => {
-                use instruction::LoadAndStoreMultipleOperation::*;
-                match operation {
-                    Ldm1 => { ldm1(cpu) },
-                    Ldm2 => { ldm2(cpu) },
-                    Ldm3 => { ldm3(cpu) },
-                    Stm1 => { stm1(cpu) },
-                    Stm2 => { stm2(cpu) },
-                };
-            },
+    //         Operation::LoadAndStoreMultiple { operation } => {
+    //             use instruction::LoadAndStoreMultipleOperation::*;
+    //             match operation {
+    //                 Ldm1 => { ldm1(cpu) },
+    //                 Ldm2 => { ldm2(cpu) },
+    //                 Ldm3 => { ldm3(cpu) },
+    //                 Stm1 => { stm1(cpu) },
+    //                 Stm2 => { stm2(cpu) },
+    //             };
+    //         },
 
-            Operation::LoadAndStoreWordOrUnsignedByte { operation, rd, address } => {
-                let address = addr_mode_2(cpu, address);
+    //         Operation::LoadAndStoreWordOrUnsignedByte { operation, rd, address } => {
+    //             let address = addr_mode_2(cpu, address);
 
-                use instruction::LoadAndStoreWordOrUnsignedByteOperation::*;
-                match operation {
-                    Ldrbt => { ldrbt(cpu, rd, address) }
-                    Ldrt  => { ldrt(cpu, rd, address) }
-                    Ldrb  => { ldrb(cpu, rd, address) }
-                    Ldr   => { ldr(cpu, rd, address) }
-                    Strbt => { strbt(cpu, address, rd) }
-                    Strt  => { strt(cpu, address, rd) }
-                    Strb  => { strb(cpu, address, rd) }
-                    Str   => { str(cpu, address, rd) }
-                };
-            },
+    //             use instruction::LoadAndStoreWordOrUnsignedByteOperation::*;
+    //             match operation {
+    //                 Ldrbt => { ldrbt(cpu, rd, address) }
+    //                 Ldrt  => { ldrt(cpu, rd, address) }
+    //                 Ldrb  => { ldrb(cpu, rd, address) }
+    //                 Ldr   => { ldr(cpu, rd, address) }
+    //                 Strbt => { strbt(cpu, address, rd) }
+    //                 Strt  => { strt(cpu, address, rd) }
+    //                 Strb  => { strb(cpu, address, rd) }
+    //                 Str   => { str(cpu, address, rd) }
+    //             };
+    //         },
 
-            Operation::Multiply { operation, s, rd, rn, rm, rs } => {
-                use instruction::MultiplyOperation::*;
-                match operation {
-                    Mul   => { mul(  cpu, s, rd,     rm, rs) },
-                    Mla   => { mla(  cpu, s, rd, rn, rm, rs) },
-                    Umull => { umull(cpu, s, rd, rn, rm, rs) },
-                    Umlal => { umlal(cpu, s, rd, rn, rm, rs) },
-                    Smull => { smull(cpu, s, rd, rn, rm, rs) },
-                    Smlal => { smlal(cpu, s, rd, rn, rm, rs) },
-                };
-            },
+    //         Operation::Multiply { operation, s, rd, rn, rm, rs } => {
+    //             use instruction::MultiplyOperation::*;
+    //             match operation {
+    //                 Mul   => { mul(  cpu, s, rd,     rm, rs) },
+    //                 Mla   => { mla(  cpu, s, rd, rn, rm, rs) },
+    //                 Umull => { umull(cpu, s, rd, rn, rm, rs) },
+    //                 Umlal => { umlal(cpu, s, rd, rn, rm, rs) },
+    //                 Smull => { smull(cpu, s, rd, rn, rm, rs) },
+    //                 Smlal => { smlal(cpu, s, rd, rn, rm, rs) },
+    //             };
+    //         },
 
-            Operation::Semaphore { b, rd, rm, rn } => {
-                if b {
-                    swpb(cpu, rd, rm, rn);
-                } else {
-                    swp(cpu, rd, rm, rn);
-                }
-            },
+    //         Operation::Semaphore { b, rd, rm, rn } => {
+    //             if b {
+    //                 swpb(cpu, rd, rm, rn);
+    //             } else {
+    //                 swp(cpu, rd, rm, rn);
+    //             }
+    //         },
 
-            Operation::SoftwareInterrupt { immediate } => {
-                swi(cpu, immediate);
-            },
+    //         Operation::SoftwareInterrupt { immediate } => {
+    //             swi(cpu, immediate);
+    //         },
 
-            Operation::StatusRegister { operation, r, f, s, x, c, rd, address } => {
-                let address = addr_mode_1(cpu, address);
-                use instruction::StatusRegisterOperation::*;
-                match operation {
-                    Msr => { msr(cpu, c, x, s, f, r, address.0) },
-                    Mrs => { mrs(cpu, r, rd) },
-                };
-            },
-        }
-    }
+    //         Operation::StatusRegister { operation, r, f, s, x, c, rd, address } => {
+    //             let address = addr_mode_1(cpu, address);
+    //             use instruction::StatusRegisterOperation::*;
+    //             match operation {
+    //                 Msr => { msr(cpu, c, x, s, f, r, address.0) },
+    //                 Mrs => { mrs(cpu, r, rd) },
+    //             };
+    //         },
+    //     }
+    // }
 
     if cached_pc == cpu.regs[pc] {
         cpu.regs[pc] += 4;
@@ -618,11 +618,11 @@ fn umull(cpu: &mut Cpu, s: bool, rd_hi: Register, rd_lo: Register, rm: Register,
     unimplemented!();
 }
 
-// Addressing modes
+// Address modes
 
 // Returns (shifter_operand, shifter_carry_out)
-fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
-    let AddressingMode1 { i, operand } = address;
+fn addr_mode_1(cpu: &Cpu, address: AddressMode1) -> (u32, bool) {
+    let AddressMode1 { i, operand } = address;
     let shifter_operand: u32;
     let shifter_carry_out: bool;
 
@@ -788,8 +788,8 @@ fn addr_mode_1(cpu: &Cpu, address: AddressingMode1) -> (u32, bool) {
     (shifter_operand, shifter_carry_out)
 }
 
-fn addr_mode_2(cpu: &mut Cpu, address: AddressingMode2) -> u32 {
-    let AddressingMode2 { i, p, u, w, rn, offset } = address;
+fn addr_mode_2(cpu: &mut Cpu, address: AddressMode2) -> u32 {
+    let AddressMode2 { i, p, u, w, rn, offset } = address;
 
     let offset_val = if i {
         let shift_imm = offset.bits(7..12);
@@ -834,8 +834,8 @@ fn addr_mode_2(cpu: &mut Cpu, address: AddressingMode2) -> u32 {
     address
 }
 
-fn addr_mode_3(cpu: &mut Cpu, address: AddressingMode3) -> u32 {
-    let AddressingMode3 { p, u, i, w, rn, offset_a, offset_b } = address;
+fn addr_mode_3(cpu: &mut Cpu, address: AddressMode3) -> u32 {
+    let AddressMode3 { p, u, i, w, rn, offset_a, offset_b } = address;
     if !p && w { panic!("unpredictable"); }
 
     let offset = if i {

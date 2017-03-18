@@ -6,22 +6,22 @@ pub enum Instruction {
     Bx { condition: Condition, rm: Register },
 
     // Data processing
-    And { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Eor { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Sub { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Rsb { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Add { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Adc { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Sbc { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Rsc { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Tst { condition: Condition, s: bool, rn: Register, operand2: AddressingMode1 },
-    Teq { condition: Condition, s: bool, rn: Register, operand2: AddressingMode1 },
-    Cmp { condition: Condition, s: bool, rn: Register, operand2: AddressingMode1 },
-    Cmn { condition: Condition, s: bool, rn: Register, operand2: AddressingMode1 },
-    Orr { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Mov { condition: Condition, s: bool, rd: Register, operand2: AddressingMode1 },
-    Bic { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressingMode1 },
-    Mvn { condition: Condition, s: bool, rd: Register, operand2: AddressingMode1 },
+    And { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Eor { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Sub { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Rsb { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Add { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Adc { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Sbc { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Rsc { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Tst { condition: Condition, s: bool, rn: Register, operand2: AddressMode1 },
+    Teq { condition: Condition, s: bool, rn: Register, operand2: AddressMode1 },
+    Cmp { condition: Condition, s: bool, rn: Register, operand2: AddressMode1 },
+    Cmn { condition: Condition, s: bool, rn: Register, operand2: AddressMode1 },
+    Orr { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Mov { condition: Condition, s: bool, rd: Register, operand2: AddressMode1 },
+    Bic { condition: Condition, s: bool, rd: Register, rn: Register, operand2: AddressMode1 },
+    Mvn { condition: Condition, s: bool, rd: Register, operand2: AddressMode1 },
 
     // Multiply
     Mul { condition: Condition, s: bool, rd: Register, rm: Register, rs: Register },
@@ -32,24 +32,24 @@ pub enum Instruction {
     Smlal { condition: Condition, s: bool, rd: Register, rn: Register, rm: Register, rs: Register },
 
     // Status register access
-    Msr { condition: Condition, c: bool, x: bool, s: bool, f: bool, r: bool, address: AddressingMode1 },
+    Msr { condition: Condition, c: bool, x: bool, s: bool, f: bool, r: bool, address: AddressMode1 },
     Mrs { condition: Condition, r: bool, rd: Register },
 
     // Load/store (halfword or signed byte)
-    Ldrh { condition: Condition, rd: Register, address: AddressingMode3 },
-    Ldrsb { condition: Condition, rd: Register, address: AddressingMode3 },
-    Ldrsh { condition: Condition, rd: Register, address: AddressingMode3 },
-    Strh { condition: Condition, rd: Register, address: AddressingMode3 },
+    Ldrh { condition: Condition, rd: Register, address: AddressMode3 },
+    Ldrsb { condition: Condition, rd: Register, address: AddressMode3 },
+    Ldrsh { condition: Condition, rd: Register, address: AddressMode3 },
+    Strh { condition: Condition, rd: Register, address: AddressMode3 },
 
     // Load/store (word or unsigned byte)
-    Ldrbt { condition: Condition, rd: Register, address: AddressingMode2 },
-    Ldrt { condition: Condition, rd: Register, address: AddressingMode2 },
-    Ldrb { condition: Condition, rd: Register, address: AddressingMode2 },
-    Ldr { condition: Condition, rd: Register, address: AddressingMode2 },
-    Strbt { condition: Condition, rd: Register, address: AddressingMode2 },
-    Strt { condition: Condition, rd: Register, address: AddressingMode2 },
-    Strb { condition: Condition, rd: Register, address: AddressingMode2 },
-    Str { condition: Condition, rd: Register, address: AddressingMode2 },
+    Ldrbt { condition: Condition, rd: Register, address: AddressMode2 },
+    Ldrt { condition: Condition, rd: Register, address: AddressMode2 },
+    Ldrb { condition: Condition, rd: Register, address: AddressMode2 },
+    Ldr { condition: Condition, rd: Register, address: AddressMode2 },
+    Strbt { condition: Condition, rd: Register, address: AddressMode2 },
+    Strt { condition: Condition, rd: Register, address: AddressMode2 },
+    Strb { condition: Condition, rd: Register, address: AddressMode2 },
+    Str { condition: Condition, rd: Register, address: AddressMode2 },
 
     // LoadAndStoreMultiple
     Ldm1 { condition: Condition }, // TODO
@@ -77,7 +77,7 @@ impl Instruction {
     pub fn condition(&self) -> Condition {
         // Condition not extracted into a parent struct because Display
         // trait impl needs access to condition and arguments.
-        use Instruction::*;
+        use self::Instruction::*;
         match *self {
             B { condition, .. } => condition,
             Bx { condition, .. } => condition,
@@ -134,15 +134,32 @@ impl Instruction {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum Condition {
-    Eq, Ne, Cs, Cc, Mi, Pl, Vs, Vc, Hi, Ls, Ge, Lt, Gt, Le, Al, Nv }
+    Eq, // Equal
+    Ne, // Not equal
+    Cs, // Carry set/unsigned higher or same
+    Cc, // Carry clear/unsigned lower
+    Mi, // Minus/Negative
+    Pl, // Plus/positive or zero
+    Vs, // Overflow
+    Vc, // No overflow
+    Hi, // Unsigned higher
+    Ls, // Unsigned lower or same
+    Ge, // Signed greater than or equal
+    Lt, // Signed less than
+    Gt, // Signed greater than
+    Le, // Signed less than or equal
+    Al, // Always (unconditional)
+    Nv, // Never
+}
 
-pub struct AddressingMode1 {
+pub struct AddressMode1 {
     pub i: bool,
     pub operand: u32,
 }
 
-pub struct AddressingMode2 {
+pub struct AddressMode2 {
     pub i: bool,
     pub p: bool,
     pub u: bool,
@@ -151,7 +168,7 @@ pub struct AddressingMode2 {
     pub offset: u32,
 }
 
-pub struct AddressingMode3 {
+pub struct AddressMode3 {
     pub p: bool,
     pub u: bool,
     pub i: bool,
