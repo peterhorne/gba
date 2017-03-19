@@ -1,4 +1,5 @@
 use cpu::Register;
+use std::fmt;
 
 pub enum Instruction {
     // Branch
@@ -75,8 +76,8 @@ pub enum Instruction {
 
 impl Instruction {
     pub fn condition(&self) -> Condition {
-        // Condition not extracted into a parent struct because Display
-        // trait impl needs access to condition and arguments.
+        // Condition not extracted into a parent struct because
+        // Display trait impl accesses condition and arguments.
         use self::Instruction::*;
         match *self {
             B { condition, .. } => condition,
@@ -176,4 +177,65 @@ pub struct AddressMode3 {
     pub rn: Register,
     pub offset_a: u32,
     pub offset_b: u32,
+}
+
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Instruction::*;
+        let value = match *self {
+            B { .. } => { "B" },
+            Bx { .. } => { "Bx" },
+            And { .. } => { "And" },
+            Eor { .. } => { "Eor" },
+            Sub { .. } => { "Sub" },
+            Rsb { .. } => { "Rsb" },
+            Add { .. } => { "Add" },
+            Adc { .. } => { "Adc" },
+            Sbc { .. } => { "Sbc" },
+            Rsc { .. } => { "Rsc" },
+            Tst { .. } => { "Tst" },
+            Teq { .. } => { "Teq" },
+            Cmp { .. } => { "Cmp" },
+            Cmn { .. } => { "Cmn" },
+            Orr { .. } => { "Orr" },
+            Mov { .. } => { "Mov" },
+            Bic { .. } => { "Bic" },
+            Mvn { .. } => { "Mvn" },
+            Mul { .. } => { "Mul" },
+            Mla { .. } => { "Mla" },
+            Umull { .. } => { "Umull" },
+            Umlal { .. } => { "Umlal" },
+            Smull { .. } => { "Smull" },
+            Smlal { .. } => { "Smlal" },
+            Msr { .. } => { "Msr" },
+            Mrs { .. } => { "Mrs" },
+            Ldrh { .. } => { "Ldrh" },
+            Ldrsb { .. } => { "Ldrsb" },
+            Ldrsh { .. } => { "Ldrsh" },
+            Strh { .. } => { "Strh" },
+            Ldrbt { .. } => { "Ldrbt" },
+            Ldrt { .. } => { "Ldrt" },
+            Ldrb { .. } => { "Ldrb" },
+            Ldr { .. } => { "Ldr" },
+            Strbt { .. } => { "Strbt" },
+            Strt { .. } => { "Strt" },
+            Strb { .. } => { "Strb" },
+            Str { .. } => { "Str" },
+            Ldm1 { .. } => { "Ldm1" },
+            Ldm2 { .. } => { "Ldm2" },
+            Ldm3 { .. } => { "Ldm3" },
+            Stm1 { .. } => { "Stm1" },
+            Stm2 { .. } => { "Stm2" },
+            Swpb { .. } => { "Swpb" },
+            Swp { .. } => { "Swp" },
+            Swi { .. } => { "Swi" },
+            Cdp { .. } => { "Cdp" },
+            Ldc { .. } => { "Ldc" },
+            Mcr { .. } => { "Mcr" },
+            Mrc { .. } => { "Mrc" },
+            Stc { .. } => { "Stc" },
+        };
+
+        write!(f, "{}", value)
+    }
 }

@@ -37,6 +37,10 @@ impl Cpu {
         self.regs[Register(15)]
     }
 
+    pub fn set_pc(&mut self, value: u32) {
+        self.regs[Register(15)] = value;
+    }
+
     pub fn tick(&mut self) {
         let address = self.pc();
         let instruction = if self.cpsr.t() {
@@ -48,6 +52,11 @@ impl Cpu {
         };
 
         execute(self, instruction);
+
+        if address == self.pc() {
+            let inc = if self.cpsr.t() { 2 } else { 4 };
+            self.set_pc(address + inc);
+        }
     }
 }
 

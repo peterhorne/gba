@@ -10,131 +10,425 @@ use instruction::{
 };
 
 pub fn execute(cpu: &mut Cpu, inst: Instruction) {
-    let pc = Register(15);
-    let cached_pc = cpu.regs[pc];
-    unimplemented!();
-
-    // if condition_passed(cpu, inst.condition) {
-    //     match inst.operation {
-    //         Operation::Branch { l, signed_immed } => {
-    //             b(cpu, l, signed_immed);
-    //         },
-
-    //         Operation::BranchAndExchange { rm } => {
-    //             bx(cpu, rm);
-    //         },
-
-    //         Operation::Coprocessor { operation, coprocessor, opcode1, opcode2, crd, crn, crm } => {
-    //             use instruction::CoprocessorOperation::*;
-    //             match operation {
-    //                 Cdp => { cdp(cpu, coprocessor, opcode1, opcode2, crd, crn, crm) },
-    //                 Ldc => { ldc(cpu) },
-    //                 Mcr => { mcr(cpu) },
-    //                 Mrc => { mrc(cpu) },
-    //                 Stc => { stc(cpu) },
-    //             };
-    //         },
-
-    //         Operation::DataProcessing { operation, s, rn, rd, address } => {
-    //             let operand2 = addr_mode_1(cpu, address);
-    //             use instruction::DataProcessingOperation::*;
-    //             match operation {
-    //                 And => { and(cpu, s, rd, rn, operand2) },
-    //                 Eor => { eor(cpu, s, rd, rn, operand2) },
-    //                 Sub => { sub(cpu, s, rd, rn, operand2) },
-    //                 Rsb => { rsb(cpu, s, rd, rn, operand2) },
-    //                 Add => { add(cpu, s, rd, rn, operand2) },
-    //                 Adc => { adc(cpu, s, rd, rn, operand2) },
-    //                 Sbc => { sbc(cpu, s, rd, rn, operand2) },
-    //                 Rsc => { rsc(cpu, s, rd, rn, operand2) },
-    //                 Tst => { tst(cpu, s,     rn, operand2) },
-    //                 Teq => { teq(cpu, s,     rn, operand2) },
-    //                 Cmp => { cmp(cpu, s,     rn, operand2) },
-    //                 Cmn => { cmn(cpu, s,     rn, operand2) },
-    //                 Orr => { orr(cpu, s, rd, rn, operand2) },
-    //                 Mov => { mov(cpu, s, rd,     operand2) },
-    //                 Bic => { bic(cpu, s, rd, rn, operand2) },
-    //                 Mvn => { mvn(cpu, s, rd,     operand2) },
-    //             };
-    //         },
-
-    //         Operation::LoadAndStoreHalfwordOrSignedByte { operation, rd, address } => {
-    //             let address = addr_mode_3(cpu, address);
-
-    //             use instruction::LoadAndStoreHalfwordOrSignedByteOperation::*;
-    //             match operation {
-    //                 Ldrh  => { ldrh(cpu, rd, address) },
-    //                 Ldrsb => { ldrsb(cpu, rd, address) },
-    //                 Ldrsh => { ldrsh(cpu, rd, address) },
-    //                 Strh  => { strh(cpu, rd, address) },
-    //             };
-    //         },
-
-    //         Operation::LoadAndStoreMultiple { operation } => {
-    //             use instruction::LoadAndStoreMultipleOperation::*;
-    //             match operation {
-    //                 Ldm1 => { ldm1(cpu) },
-    //                 Ldm2 => { ldm2(cpu) },
-    //                 Ldm3 => { ldm3(cpu) },
-    //                 Stm1 => { stm1(cpu) },
-    //                 Stm2 => { stm2(cpu) },
-    //             };
-    //         },
-
-    //         Operation::LoadAndStoreWordOrUnsignedByte { operation, rd, address } => {
-    //             let address = addr_mode_2(cpu, address);
-
-    //             use instruction::LoadAndStoreWordOrUnsignedByteOperation::*;
-    //             match operation {
-    //                 Ldrbt => { ldrbt(cpu, rd, address) }
-    //                 Ldrt  => { ldrt(cpu, rd, address) }
-    //                 Ldrb  => { ldrb(cpu, rd, address) }
-    //                 Ldr   => { ldr(cpu, rd, address) }
-    //                 Strbt => { strbt(cpu, address, rd) }
-    //                 Strt  => { strt(cpu, address, rd) }
-    //                 Strb  => { strb(cpu, address, rd) }
-    //                 Str   => { str(cpu, address, rd) }
-    //             };
-    //         },
-
-    //         Operation::Multiply { operation, s, rd, rn, rm, rs } => {
-    //             use instruction::MultiplyOperation::*;
-    //             match operation {
-    //                 Mul   => { mul(  cpu, s, rd,     rm, rs) },
-    //                 Mla   => { mla(  cpu, s, rd, rn, rm, rs) },
-    //                 Umull => { umull(cpu, s, rd, rn, rm, rs) },
-    //                 Umlal => { umlal(cpu, s, rd, rn, rm, rs) },
-    //                 Smull => { smull(cpu, s, rd, rn, rm, rs) },
-    //                 Smlal => { smlal(cpu, s, rd, rn, rm, rs) },
-    //             };
-    //         },
-
-    //         Operation::Semaphore { b, rd, rm, rn } => {
-    //             if b {
-    //                 swpb(cpu, rd, rm, rn);
-    //             } else {
-    //                 swp(cpu, rd, rm, rn);
-    //             }
-    //         },
-
-    //         Operation::SoftwareInterrupt { immediate } => {
-    //             swi(cpu, immediate);
-    //         },
-
-    //         Operation::StatusRegister { operation, r, f, s, x, c, rd, address } => {
-    //             let address = addr_mode_1(cpu, address);
-    //             use instruction::StatusRegisterOperation::*;
-    //             match operation {
-    //                 Msr => { msr(cpu, c, x, s, f, r, address.0) },
-    //                 Mrs => { mrs(cpu, r, rd) },
-    //             };
-    //         },
-    //     }
-    // }
-
-    if cached_pc == cpu.regs[pc] {
-        cpu.regs[pc] += 4;
+    if condition_passed(cpu, inst.condition()) {
+        println!("Executing {}", inst);
+    } else {
+        println!("Skipping {}", inst);
+        return;
     }
+
+    use self::Instruction::*;
+    match inst {
+        B { l, signed_immed, .. } => {
+            if l {
+                let pc_val = cpu.regs[Register(15)];
+                cpu.regs[Register(14)] = pc_val + 4;
+            }
+
+            let sign_extended = (((signed_immed as i32) << 8) >> 8) as u32;
+            let target = (sign_extended << 2) + 8;
+            cpu.regs[Register(15)] += target;
+        },
+
+        Bx { rm, .. } => {
+            let rm_val = cpu.regs[rm];
+            cpu.cpsr.set_t(rm_val.bit(0));
+            cpu.regs[Register(15)] = rm_val & 0xFFFFFFFE;
+        },
+
+        And { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let result = cpu.regs[rn] & shifter_operand;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(shifter_carry_out);
+            }
+        },
+
+        Eor { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let result = cpu.regs[rn] | shifter_operand;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(shifter_carry_out);
+            }
+        },
+
+        Sub { s, rd, rn, operand2, .. } => {
+			let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+			let rn_val = cpu.regs[rn];
+			let result = rn_val - shifter_operand;
+			cpu.regs[rd] = result;
+
+			if s && rd == Register(15) {
+				cpu.cpsr = cpu.spsr;
+			} else if s {
+				cpu.cpsr.set_n(result.bit(31));
+				cpu.cpsr.set_z(result == 0);
+				cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand));
+				cpu.cpsr.set_v(overflow_from_sub(rn_val, shifter_operand, result));
+			}
+        },
+
+        Rsb { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result = shifter_operand - rn_val;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(!borrow_from(shifter_operand, rn_val));
+                cpu.cpsr.set_v(overflow_from_sub(shifter_operand, rn_val, result));
+            }
+        },
+
+        Add { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result_long = rn_val as u64 + shifter_operand as u64;
+            let result = result_long as u32;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(carry_from(result_long));
+                cpu.cpsr.set_v(overflow_from_add(rn_val, shifter_operand, result));
+            }
+        },
+
+        Adc { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let c_flag = if cpu.cpsr.c() { 1 } else { 0 };
+            let result_long = rn_val as u64 + shifter_operand as u64 + c_flag as u64;
+            let result = result_long as u32;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(carry_from(result_long));
+                cpu.cpsr.set_v(overflow_from_add(rn_val, shifter_operand, result));
+            }
+        },
+
+        Sbc { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
+            let result = rn_val - shifter_operand - not_c_flag;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand + not_c_flag));
+                cpu.cpsr.set_v(overflow_from_sub(rn_val, shifter_operand + not_c_flag, result));
+            }
+        },
+
+        Rsc { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
+            let result = shifter_operand - rn_val - not_c_flag;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(!borrow_from(shifter_operand, rn_val + not_c_flag));
+                cpu.cpsr.set_v(overflow_from_sub(shifter_operand, rn_val + not_c_flag, result));
+            }
+        },
+
+        Tst { s, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result = rn_val & shifter_operand;
+            cpu.cpsr.set_n(result.bit(31));
+            cpu.cpsr.set_z(result == 0);
+            cpu.cpsr.set_c(shifter_carry_out);
+        },
+
+        Teq { s, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result = rn_val | shifter_operand;
+            cpu.cpsr.set_n(result.bit(31));
+            cpu.cpsr.set_z(result == 0);
+            cpu.cpsr.set_c(shifter_carry_out);
+        },
+
+        Cmp { s, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result = rn_val - shifter_operand;
+            cpu.cpsr.set_n(result.bit(31));
+            cpu.cpsr.set_z(result == 0);
+            cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand));
+            cpu.cpsr.set_z(overflow_from_sub(rn_val, shifter_operand, result));
+        },
+
+        Cmn { s, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result_long = rn_val as u64 + shifter_operand as u64;
+            let result = result_long as u32;
+
+            cpu.cpsr.set_n(result.bit(31));
+            cpu.cpsr.set_z(result == 0);
+            cpu.cpsr.set_c(carry_from(result_long));
+            cpu.cpsr.set_z(overflow_from_add(rn_val, shifter_operand, result));
+        },
+
+        Orr { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result = rn_val | shifter_operand;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(shifter_carry_out);
+            }
+        },
+
+        Mov { s, rd, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            cpu.regs[rd] = shifter_operand;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(shifter_operand.bit(31));
+                cpu.cpsr.set_z(shifter_operand == 0);
+                cpu.cpsr.set_c(shifter_carry_out);
+            }
+        },
+
+        Bic { s, rd, rn, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let rn_val = cpu.regs[rn];
+            let result = rn_val & !shifter_operand;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(shifter_carry_out);
+            }
+        },
+
+        Mvn { s, rd, operand2, .. } => {
+            let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
+            let result = !shifter_operand;
+            cpu.regs[rd] = result;
+
+            if s && rd == Register(15) {
+                cpu.cpsr = cpu.spsr;
+            } else if s {
+                cpu.cpsr.set_n(result.bit(31));
+                cpu.cpsr.set_z(result == 0);
+                cpu.cpsr.set_c(shifter_carry_out);
+            }
+        },
+
+        Mul { s, rd, rm, rs, .. } => {
+            unimplemented!();
+        },
+
+        Mla { s, rd, rn, rm, rs, .. } => {
+            unimplemented!();
+        },
+
+        Umull { s, rd, rn, rm, rs, .. } => {
+            unimplemented!();
+        },
+
+        Umlal { s, rd, rn, rm, rs, .. } => {
+            unimplemented!();
+        },
+
+        Smull { s, rd, rn, rm, rs, .. } => {
+            unimplemented!();
+        },
+
+        Smlal { s, rd, rn, rm, rs, .. } => {
+            unimplemented!();
+        },
+
+        Msr { c, x, s, f, r, address, .. } => {
+            let (operand, _) = addr_mode_1(cpu, address);
+            if r {
+                if !cpu.cpsr.has_spsr() { return; }
+                if c { cpu.spsr.set_bits(0..8,   operand.bits(0..8)); }
+                if x { cpu.spsr.set_bits(8..16,  operand.bits(8..16)); }
+                if s { cpu.spsr.set_bits(16..24, operand.bits(16..24)); }
+                if f { cpu.spsr.set_bits(24..32, operand.bits(24..32)); }
+            } else {
+                let priviledged = cpu.cpsr.is_priviledged();
+                if c && priviledged { cpu.cpsr.set_bits(0..8,   operand.bits(0..8)); }
+                if x && priviledged { cpu.cpsr.set_bits(8..16,  operand.bits(8..16)); }
+                if s && priviledged { cpu.cpsr.set_bits(16..24, operand.bits(16..24)); }
+                if f                { cpu.cpsr.set_bits(24..32, operand.bits(24..32)); }
+            }
+        },
+
+        Mrs { r, rd, .. } => {
+            cpu.regs[rd] = if r { cpu.spsr.to_bits() } else { cpu.cpsr.to_bits() };
+        },
+
+        Ldrh { rd, address, .. } => {
+            unimplemented!();
+        },
+
+        Ldrsb { rd, address, .. } => {
+            unimplemented!();
+        },
+
+        Ldrsh { rd, address, .. } => {
+            unimplemented!();
+        },
+
+        Strh { rd, address, .. } => {
+            unimplemented!();
+        },
+
+        Ldrbt { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            // TODO: signal memory system to act as if CPU is in user mode
+            cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
+        },
+
+        Ldrt { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            // TODO: signal memory system to act as if CPU is in user mode
+            let value = cpu.memory.read_word(address);
+            let rotation = address.bits(0..2);
+            cpu.regs[rd] = value.rotate_right(8 * rotation);
+        },
+
+        Ldrb { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
+        },
+
+        Ldr { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            let value = cpu.memory.read_word(address);
+            let rotation = address.bits(0..2);
+            let result = value.rotate_right(8 * rotation);
+
+            cpu.regs[rd] = if rd == Register(15) {
+                result & 0xFFFFFFFC
+            } else {
+                result
+            }
+        },
+
+        Strbt { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            // TODO: signal memory system to act as if CPU is in user mode
+            cpu.memory.write_byte(address, cpu.regs[rd] as u8);
+        },
+
+        Strt { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            // TODO: signal memory system to act as if CPU is in user mode
+            cpu.memory.write_word(address, cpu.regs[rd]);
+        },
+
+        Strb { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            cpu.memory.write_byte(address, cpu.regs[rd] as u8);
+        },
+
+        Str { rd, address, .. } => {
+            let address = addr_mode_2(cpu, address);
+            cpu.memory.write_word(address, cpu.regs[rd]);
+        },
+
+        Ldm1 { .. } => {
+            unimplemented!();
+        },
+
+        Ldm2 { .. } => {
+            unimplemented!();
+        },
+
+        Ldm3 { .. } => {
+            unimplemented!();
+        },
+
+        Stm1 { .. } => {
+            unimplemented!();
+        },
+
+        Stm2 { .. } => {
+            unimplemented!();
+        },
+
+        Swpb { rd, rm, rn, .. } => {
+            unimplemented!();
+        },
+
+        Swp { rd, rm, rn, .. } => {
+            unimplemented!();
+        },
+
+        Swi { immediate, .. } => {
+            unimplemented!();
+        },
+
+        Cdp { .. } => {
+            unimplemented!();
+        },
+
+        Ldc { .. } => {
+            unimplemented!();
+        },
+
+        Mcr { .. } => {
+            unimplemented!();
+        },
+
+        Mrc { .. } => {
+            unimplemented!();
+        },
+
+        Stc { .. } => {
+            unimplemented!();
+        },
+    };
 }
 
 fn condition_passed(cpu: &Cpu, condition: Condition) -> bool {
@@ -161,461 +455,6 @@ fn condition_passed(cpu: &Cpu, condition: Condition) -> bool {
         Condition::Al => { true },
         Condition::Nv => { panic!("unpredictable") },
     }
-}
-
-// Instructions
-
-fn adc(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: adc");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let c_flag = if cpu.cpsr.c() { 1 } else { 0 };
-    let result_long = rn_val as u64 + shifter_operand as u64 + c_flag as u64;
-    let result = result_long as u32;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(carry_from(result_long));
-        cpu.cpsr.set_v(overflow_from_add(rn_val, shifter_operand, result));
-    }
-}
-
-fn add(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: add");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result_long = rn_val as u64 + shifter_operand as u64;
-    let result = result_long as u32;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(carry_from(result_long));
-        cpu.cpsr.set_v(overflow_from_add(rn_val, shifter_operand, result));
-    }
-}
-
-fn and(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: and");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let result = cpu.regs[rn] & shifter_operand;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(shifter_carry_out);
-    }
-}
-
-fn b(cpu: &mut Cpu, l: bool, signed_immed: u32) {
-    println!("Instruction: b");
-    if l {
-        let pc_val = cpu.regs[Register(15)];
-        cpu.regs[Register(14)] = pc_val + 4;
-    }
-
-    let sign_extended = (((signed_immed as i32) << 8) >> 8) as u32;
-    let target = (sign_extended << 2) + 8;
-    cpu.regs[Register(15)] += target;
-}
-
-fn bic(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: bic");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result = rn_val & !shifter_operand;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(shifter_carry_out);
-    }
-}
-
-fn bx(cpu: &mut Cpu, rm: Register) {
-    println!("Instruction: bx");
-    let rm_val = cpu.regs[rm];
-    cpu.cpsr.set_t(rm_val.bit(0));
-    cpu.regs[Register(15)] = rm_val & 0xFFFFFFFE;
-}
-
-
-fn cdp(cpu: &mut Cpu, coprocessor: u32, opcode1: u32, opcode2: u32, crd: u32, crn: u32, crm: u32) {
-    println!("Instruction: cdp");
-    unimplemented!();
-}
-
-fn cmn(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: cmn");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result_long = rn_val as u64 + shifter_operand as u64;
-    let result = result_long as u32;
-
-    cpu.cpsr.set_n(result.bit(31));
-    cpu.cpsr.set_z(result == 0);
-    cpu.cpsr.set_c(carry_from(result_long));
-    cpu.cpsr.set_z(overflow_from_add(rn_val, shifter_operand, result));
-}
-
-fn cmp(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: cmp");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result = rn_val - shifter_operand;
-    cpu.cpsr.set_n(result.bit(31));
-    cpu.cpsr.set_z(result == 0);
-    cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand));
-    cpu.cpsr.set_z(overflow_from_sub(rn_val, shifter_operand, result));
-}
-
-fn eor(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: eor");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let result = cpu.regs[rn] | shifter_operand;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(shifter_carry_out);
-    }
-}
-
-fn ldc(cpu: &mut Cpu) {
-    println!("Instruction: ldc");
-    unimplemented!();
-}
-
-fn ldm1(cpu: &mut Cpu) {
-    println!("Instruction: ldm1");
-    unimplemented!();
-}
-
-fn ldm2(cpu: &mut Cpu) {
-    println!("Instruction: ldm2");
-    unimplemented!();
-}
-
-fn ldm3(cpu: &mut Cpu) {
-    println!("Instruction: ldm3");
-    unimplemented!();
-}
-
-fn ldr(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: ldr");
-    let value = cpu.memory.read_word(address);
-    let rotation = address.bits(0..2);
-    let result = value.rotate_right(8 * rotation);
-
-    cpu.regs[rd] = if rd == Register(15) {
-        result & 0xFFFFFFFC
-    } else {
-        result
-    }
-}
-
-fn ldrb(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: ldrb");
-    cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
-}
-
-fn ldrbt(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: ldrbt");
-    // TODO: signal memory system to act as if CPU is in user mode
-    cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
-}
-
-fn ldrh(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: ldrh");
-    unimplemented!();
-}
-
-fn ldrsb(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: ldrsb");
-    unimplemented!();
-}
-
-fn ldrsh(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: ldrsh");
-    unimplemented!();
-}
-
-fn ldrt(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: ldrt");
-    // TODO: signal memory system to act as if CPU is in user mode
-    let value = cpu.memory.read_word(address);
-    let rotation = address.bits(0..2);
-    cpu.regs[rd] = value.rotate_right(8 * rotation);
-}
-
-fn mcr(cpu: &mut Cpu) {
-    println!("Instruction: mcr");
-    unimplemented!();
-}
-
-fn mla(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, rm: Register, rs: Register) {
-    println!("Instruction: mla");
-    unimplemented!();
-}
-
-fn mov(cpu: &mut Cpu, s: bool, rd: Register, operand2: (u32, bool)) {
-    println!("Instruction: mov");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    cpu.regs[rd] = shifter_operand;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(shifter_operand.bit(31));
-        cpu.cpsr.set_z(shifter_operand == 0);
-        cpu.cpsr.set_c(shifter_carry_out);
-    }
-}
-
-fn mrc(cpu: &mut Cpu) {
-    println!("Instruction: mrc");
-    unimplemented!();
-}
-
-fn mrs(cpu: &mut Cpu, r: bool, rd: Register) {
-    println!("Instruction: mrs");
-    cpu.regs[rd] = if r { cpu.spsr.to_bits() } else { cpu.cpsr.to_bits() };
-}
-
-fn msr(cpu: &mut Cpu, c: bool, x: bool, s: bool, f: bool, r: bool, operand: u32) {
-    println!("Instruction: msr");
-    if r {
-        if !cpu.cpsr.has_spsr() { return; }
-        if c { cpu.spsr.set_bits(0..8,   operand.bits(0..8)); }
-        if x { cpu.spsr.set_bits(8..16,  operand.bits(8..16)); }
-        if s { cpu.spsr.set_bits(16..24, operand.bits(16..24)); }
-        if f { cpu.spsr.set_bits(24..32, operand.bits(24..32)); }
-    } else {
-        let priviledged = cpu.cpsr.is_priviledged();
-        if c && priviledged { cpu.cpsr.set_bits(0..8,   operand.bits(0..8)); }
-        if x && priviledged { cpu.cpsr.set_bits(8..16,  operand.bits(8..16)); }
-        if s && priviledged { cpu.cpsr.set_bits(16..24, operand.bits(16..24)); }
-        if f                { cpu.cpsr.set_bits(24..32, operand.bits(24..32)); }
-    }
-}
-
-fn mul(cpu: &mut Cpu, s: bool, rd: Register, rm: Register, rs: Register) {
-    println!("Instruction: mul");
-    unimplemented!();
-}
-
-fn mvn(cpu: &mut Cpu, s: bool, rd: Register, operand2: (u32, bool)) {
-    println!("Instruction: mvn");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let result = !shifter_operand;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(shifter_carry_out);
-    }
-}
-
-fn orr(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: orr");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result = rn_val | shifter_operand;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(shifter_carry_out);
-    }
-}
-
-fn rsb(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: rsb");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result = shifter_operand - rn_val;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(!borrow_from(shifter_operand, rn_val));
-        cpu.cpsr.set_v(overflow_from_sub(shifter_operand, rn_val, result));
-    }
-}
-
-fn rsc(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: rsc");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
-    let result = shifter_operand - rn_val - not_c_flag;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(!borrow_from(shifter_operand, rn_val + not_c_flag));
-        cpu.cpsr.set_v(overflow_from_sub(shifter_operand, rn_val + not_c_flag, result));
-    }
-}
-
-fn sbc(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: sbc");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
-    let result = rn_val - shifter_operand - not_c_flag;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand + not_c_flag));
-        cpu.cpsr.set_v(overflow_from_sub(rn_val, shifter_operand + not_c_flag, result));
-    }
-}
-
-fn smlal(cpu: &mut Cpu, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
-    println!("Instruction: smlal");
-    unimplemented!();
-}
-
-fn smull(cpu: &mut Cpu, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
-    println!("Instruction: smull");
-    unimplemented!();
-}
-
-fn stc(cpu: &mut Cpu) {
-    println!("Instruction: stc");
-    unimplemented!();
-}
-
-fn stm1(cpu: &mut Cpu) {
-    println!("Instruction: stm1");
-    unimplemented!();
-}
-
-fn stm2(cpu: &mut Cpu) {
-    println!("Instruction: stm2");
-    unimplemented!();
-}
-
-fn str(cpu: &mut Cpu, address: u32, rd: Register) {
-    println!("Instruction: str");
-    cpu.memory.write_word(address, cpu.regs[rd]);
-}
-
-fn strb(cpu: &mut Cpu, address: u32, rd: Register) {
-    println!("Instruction: strb");
-    cpu.memory.write_byte(address, cpu.regs[rd] as u8);
-}
-
-fn strbt(cpu: &mut Cpu, address: u32, rd: Register) {
-    println!("Instruction: strbt");
-    // TODO: signal memory system to act as if CPU is in user mode
-    cpu.memory.write_byte(address, cpu.regs[rd] as u8);
-}
-
-fn strh(cpu: &mut Cpu, rd: Register, address: u32) {
-    println!("Instruction: strh");
-    unimplemented!();
-}
-
-fn strt(cpu: &mut Cpu, address: u32, rd: Register) {
-    println!("Instruction: strt");
-    // TODO: signal memory system to act as if CPU is in user mode
-    cpu.memory.write_word(address, cpu.regs[rd]);
-}
-
-fn sub(cpu: &mut Cpu, s: bool, rd: Register, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: sub");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result = rn_val - shifter_operand;
-    cpu.regs[rd] = result;
-
-    if s && rd == Register(15) {
-        cpu.cpsr = cpu.spsr;
-    } else if s {
-        cpu.cpsr.set_n(result.bit(31));
-        cpu.cpsr.set_z(result == 0);
-        cpu.cpsr.set_c(!borrow_from(rn_val, shifter_operand));
-        cpu.cpsr.set_v(overflow_from_sub(rn_val, shifter_operand, result));
-    }
-}
-
-fn swi(cpu: &mut Cpu, immediate: u32) {
-    println!("Instruction: swi");
-    unimplemented!();
-}
-
-fn swp(cpu: &mut Cpu, rd: Register, rm: Register, rn: Register) {
-    println!("Instruction: swp");
-    unimplemented!();
-}
-
-fn swpb(cpu: &mut Cpu, rd: Register, rm: Register, rn: Register) {
-    println!("Instruction: swpb");
-    unimplemented!();
-}
-
-fn teq(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: teq");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result = rn_val | shifter_operand;
-    cpu.cpsr.set_n(result.bit(31));
-    cpu.cpsr.set_z(result == 0);
-    cpu.cpsr.set_c(shifter_carry_out);
-}
-
-fn tst(cpu: &mut Cpu, s: bool, rn: Register, operand2: (u32, bool)) {
-    println!("Instruction: tst");
-    let (shifter_operand, shifter_carry_out) = operand2;
-    let rn_val = cpu.regs[rn];
-    let result = rn_val & shifter_operand;
-    cpu.cpsr.set_n(result.bit(31));
-    cpu.cpsr.set_z(result == 0);
-    cpu.cpsr.set_c(shifter_carry_out);
-}
-
-fn umlal(cpu: &mut Cpu, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
-    println!("Instruction: umlal");
-    unimplemented!();
-}
-
-fn umull(cpu: &mut Cpu, s: bool, rd_hi: Register, rd_lo: Register, rm: Register, rs: Register) {
-    println!("Instruction: umull");
-    unimplemented!();
 }
 
 // Address modes
