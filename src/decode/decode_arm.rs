@@ -5,7 +5,9 @@ use instruction::{
     AddressMode2,
     AddressMode3,
     Condition,
-    Instruction
+    Instruction,
+    ShiftAmount,
+    ShiftDirection,
 };
 
 pub fn decode_arm(inst: u32) -> Instruction {
@@ -176,10 +178,7 @@ fn msr(inst: u32) -> Instruction {
         s: inst.bit(18),
         x: inst.bit(17),
         c: inst.bit(16),
-        address: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        address: decode_address_mode_1(inst),
     }
 }
 
@@ -278,10 +277,7 @@ fn and(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -291,10 +287,7 @@ fn eor(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -304,10 +297,7 @@ fn sub(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -317,10 +307,7 @@ fn rsb(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -330,10 +317,7 @@ fn add(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -343,10 +327,7 @@ fn adc(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -356,10 +337,7 @@ fn sbc(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -369,10 +347,7 @@ fn rsc(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -382,10 +357,7 @@ fn orr(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -394,10 +366,7 @@ fn mov(inst: u32) -> Instruction {
         condition: condition(inst),
         s: inst.bit(20),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -407,10 +376,7 @@ fn bic(inst: u32) -> Instruction {
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -419,10 +385,7 @@ fn mvn(inst: u32) -> Instruction {
         condition: condition(inst),
         s: inst.bit(20),
         rd: Register(inst.bits(12..16)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -431,10 +394,7 @@ fn tst(inst: u32) -> Instruction {
         condition: condition(inst),
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -443,10 +403,7 @@ fn teq(inst: u32) -> Instruction {
         condition: condition(inst),
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -455,10 +412,7 @@ fn cmp(inst: u32) -> Instruction {
         condition: condition(inst),
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -467,10 +421,7 @@ fn cmn(inst: u32) -> Instruction {
         condition: condition(inst),
         s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
-        operand2: AddressMode1 {
-            i: inst.bit(25),
-            operand: inst.bits(0..12),
-        },
+        operand2: decode_address_mode_1(inst),
     }
 }
 
@@ -666,5 +617,31 @@ fn swi(inst: u32) -> Instruction {
     Instruction::Swi {
         condition: condition(inst),
         immediate: inst.bits(0..24),
+    }
+}
+
+fn decode_address_mode_1(inst: u32) -> AddressMode1 {
+    if inst.bit(25) {
+        AddressMode1::Immediate {
+            value: inst.bits(0..8) as u8,
+            rotate: inst.bits(8..12) as u8,
+        }
+    } else {
+        AddressMode1::Shift {
+            rm: Register(inst.bits(0..4)),
+            direction: match inst.bits(5..7) {
+                0b00 => { ShiftDirection::Lsl },
+                0b01 => { ShiftDirection::Lsr },
+                0b10 => { ShiftDirection::Asr },
+                0b11 if inst.bits(7..12) == 0 => { ShiftDirection::Rrx },
+                0b11 => { ShiftDirection::Ror },
+                _ => { unreachable!() },
+            },
+            amount: if inst.bit(4) {
+                ShiftAmount::Register(Register(inst.bits(8..12)))
+            } else {
+                ShiftAmount::Immediate(inst.bits(7..12) as u8)
+            },
+        }
     }
 }
