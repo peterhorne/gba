@@ -166,7 +166,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             }
         },
 
-        Instruction::Tst { s, rn, operand2, .. } => {
+        Instruction::Tst { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
             let rn_val = cpu.regs[rn];
             let result = rn_val & shifter_operand;
@@ -175,7 +175,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             cpu.cpsr.set_c(shifter_carry_out);
         },
 
-        Instruction::Teq { s, rn, operand2, .. } => {
+        Instruction::Teq { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
             let rn_val = cpu.regs[rn];
             let result = rn_val | shifter_operand;
@@ -184,7 +184,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             cpu.cpsr.set_c(shifter_carry_out);
         },
 
-        Instruction::Cmp { s, rn, operand2, .. } => {
+        Instruction::Cmp { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
             let rn_val = cpu.regs[rn];
             let result = rn_val - shifter_operand;
@@ -194,7 +194,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             cpu.cpsr.set_z(overflow_from_sub(rn_val, shifter_operand, result));
         },
 
-        Instruction::Cmn { s, rn, operand2, .. } => {
+        Instruction::Cmn { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
             let rn_val = cpu.regs[rn];
             let result_long = rn_val as u64 + shifter_operand as u64;

@@ -392,7 +392,6 @@ fn mvn(inst: u32) -> Instruction {
 fn tst(inst: u32) -> Instruction {
     Instruction::Tst {
         condition: condition(inst),
-        s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         operand2: decode_address_mode_1(inst),
     }
@@ -401,7 +400,6 @@ fn tst(inst: u32) -> Instruction {
 fn teq(inst: u32) -> Instruction {
     Instruction::Teq {
         condition: condition(inst),
-        s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         operand2: decode_address_mode_1(inst),
     }
@@ -410,7 +408,6 @@ fn teq(inst: u32) -> Instruction {
 fn cmp(inst: u32) -> Instruction {
     Instruction::Cmp {
         condition: condition(inst),
-        s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         operand2: decode_address_mode_1(inst),
     }
@@ -419,7 +416,6 @@ fn cmp(inst: u32) -> Instruction {
 fn cmn(inst: u32) -> Instruction {
     Instruction::Cmn {
         condition: condition(inst),
-        s: inst.bit(20),
         rn: Register(inst.bits(16..20)),
         operand2: decode_address_mode_1(inst),
     }
