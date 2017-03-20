@@ -148,7 +148,7 @@ enum ProgramStatusRegisterMode {
     User, FIQ, IRQ, Supervisor, Abort, Undefined, System }
 
 // Newtype to prevent a register's index being mistaken for it's value.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Register(pub u32);
 
 pub struct Registers([u32; 16]);
@@ -170,11 +170,5 @@ impl Index<Register> for Registers {
 impl IndexMut<Register> for Registers {
     fn index_mut(&mut self, index: Register) -> &mut u32 {
         &mut self.0[index.0 as usize]
-    }
-}
-
-impl PartialEq for Register {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
     }
 }
