@@ -160,8 +160,8 @@ pub enum AddressMode1 {
     },
     Shift {
         rm: Register,
-        direction: ShiftDirection,
-        amount: AddressingOffset,
+        shift: ShiftDirection,
+        shift_imm: AddressingOffset,
     },
 }
 
@@ -176,18 +176,21 @@ pub enum ShiftDirection {
 
 #[derive(PartialEq)]
 pub enum AddressingOffset {
-    Immediate(u8),
+    Immediate(u16),
     Register(Register),
+    ScaledRegister {
+        rm: Register,
+        shift: ShiftDirection,
+        shift_imm: u8,
+    }
 }
 
 #[derive(PartialEq)]
 pub struct AddressMode2 {
-    pub i: bool,
-    pub p: bool,
-    pub u: bool,
-    pub w: bool,
     pub rn: Register,
-    pub offset: u32,
+    pub offset: AddressingOffset,
+    pub addressing: AddressingMode,
+    pub u: bool,
 }
 
 #[derive(PartialEq)]
@@ -461,44 +464,60 @@ impl fmt::Display for Instruction {
                         format_address_mode_3(address))
             },
 
-            Instruction::Ldrbt { condition, .. } => {
-                format!("ldrbt{}",
-                        format_condition(condition))
+            Instruction::Ldrbt { condition, rd, ref address } => {
+                format!("ldr{}bt\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
-            Instruction::Ldrt { condition, .. } => {
-                format!("ldrt{}",
-                        format_condition(condition))
+            Instruction::Ldrt { condition, rd, ref address } => {
+                format!("ldr{}t\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
-            Instruction::Ldrb { condition, .. } => {
-                format!("ldrb{}",
-                        format_condition(condition))
+            Instruction::Ldrb { condition, rd, ref address } => {
+                format!("ldr{}b\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
-            Instruction::Ldr { condition, .. } => {
-                format!("ldr{}",
-                        format_condition(condition))
+            Instruction::Ldr { condition, rd, ref address } => {
+                format!("ldr{}\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
-            Instruction::Strbt { condition, .. } => {
-                format!("strbt{}",
-                        format_condition(condition))
+            Instruction::Strbt { condition, rd, ref address } => {
+                format!("str{}bt\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
-            Instruction::Strt { condition, .. } => {
-                format!("strt{}",
-                        format_condition(condition))
+            Instruction::Strt { condition, rd, ref address } => {
+                format!("str{}t\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
-            Instruction::Strb { condition, .. } => {
-                format!("strb{}",
-                        format_condition(condition))
+            Instruction::Strb { condition, rd, ref address } => {
+                format!("str{}b\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
-            Instruction::Str { condition, .. } => {
-                format!("str{}",
-                        format_condition(condition))
+            Instruction::Str { condition, rd, ref address } => {
+                format!("str{}\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_2(address))
             },
 
             Instruction::Ldm1 { condition, .. } => {
@@ -579,24 +598,27 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
             format!("#{:x}", immediate)
         },
 
-        AddressMode1::Shift { rm, ref direction, ref amount } => {
+        AddressMode1::Shift { rm, ref shift, ref shift_imm } => {
             let rm = format_register(rm);
 
-            let formatted_amount = match *amount {
+            let formatted_amount = match *shift_imm {
                 AddressingOffset::Immediate(value) => {
                     (if value == 0 { 32 } else { value }).to_string()
                 },
                 AddressingOffset::Register(register) => {
                     format_register(register)
-                }
+                },
+                AddressingOffset::ScaledRegister { .. } => {
+                    unreachable!()
+                },
             };
 
-            match *direction {
+            match *shift {
                 ShiftDirection::Asr => {
                     format!("{}, asr {}", rm, formatted_amount)
                 },
                 ShiftDirection::Lsl => {
-                    if *amount == AddressingOffset::Immediate(0) { return rm };
+                    if *shift_imm == AddressingOffset::Immediate(0) { return rm };
                     format!("{}, lsl {}", rm, formatted_amount)
                 },
                 ShiftDirection::Lsr => {
@@ -613,12 +635,56 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
     }
 }
 
+// TODO: implement display for AddressMode2
+fn format_address_mode_2(address: &AddressMode2) -> String {
+    let AddressMode2 { rn, ref offset, ref addressing, u } = *address;
+    let formatted_offset = match *offset {
+        AddressingOffset::Immediate(byte) => format!("{:x}", byte),
+        AddressingOffset::Register(register) => format_register(register),
+        AddressingOffset::ScaledRegister { rm, ref shift, ref shift_imm } => {
+            // +/-<Rm>, <shift> #<shift_imm>
+            let rm = format_register(rm);
+            let shift_imm = (if *shift_imm == 0 { 32 } else { *shift_imm }).to_string();
+
+            match *shift {
+                ShiftDirection::Asr => {
+                    format!("{}, asr {}", rm, shift_imm)
+                },
+                ShiftDirection::Lsl => {
+                    format!("{}, lsl {}", rm, shift_imm)
+                },
+                ShiftDirection::Lsr => {
+                    format!("{}, lsr {}", rm, shift_imm)
+                },
+                ShiftDirection::Ror => {
+                    format!("{}, ror {}", rm, shift_imm)
+                },
+                ShiftDirection::Rrx => {
+                    format!("{}, rrx", rm)
+                },
+            }
+        },
+    };
+
+    let signed_offset = format!("#{}{}", format_bool(!u, "-"), formatted_offset);
+
+    match *addressing {
+        AddressingMode::Offset =>
+            format!("[{}, {}]", format_register(rn), signed_offset),
+        AddressingMode::PreIndexed =>
+            format!("[{}, {}]!", format_register(rn), signed_offset),
+        AddressingMode::PostIndexed =>
+            format!("[{}], {}", format_register(rn), signed_offset),
+    }
+}
+
 // TODO: implement display for AddressMode3
 fn format_address_mode_3(address: &AddressMode3) -> String {
     let AddressMode3 { rn, ref offset, ref addressing, u } = *address;
     let formatted_offset = match *offset {
-        AddressingOffset::Immediate(byte) => { format!("{:x}", byte) },
-        AddressingOffset::Register(register) => { format_register(register) },
+        AddressingOffset::Immediate(byte) => format!("{:x}", byte),
+        AddressingOffset::Register(register) => format_register(register),
+        AddressingOffset::ScaledRegister { .. } => unreachable!(),
     };
 
     let signed_offset = format!("#{}{}", format_bool(!u, "-"), formatted_offset);

@@ -475,68 +475,69 @@ fn addr_mode_1(cpu: &Cpu, address: AddressMode1) -> (u32, bool) {
                 shifter_operand.bit(31)
             };
         },
-        AddressMode1::Shift { rm, direction, amount } => {
+        AddressMode1::Shift { rm, shift, shift_imm } => {
             let rm_val = cpu.regs[rm];
-            let amount = match amount {
-                AddressingOffset::Immediate(value) => { value },
-                AddressingOffset::Register(rs) => { cpu.regs[rs].bits(0..8) as u8 },
+            let shift_imm = match shift_imm {
+                AddressingOffset::Immediate(value) =>  value ,
+                AddressingOffset::Register(rs) =>  cpu.regs[rs].bits(0..8) as u16,
+                AddressingOffset::ScaledRegister { .. } => unreachable!(),
             };
 
-            match direction {
+            match shift {
                 ShiftDirection::Lsl => {
-                    if amount == 0 {
+                    if shift_imm == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = cpu.cpsr.c();
-                    } else if amount < 32 {
-                        shifter_operand = rm_val << amount;
-                        shifter_carry_out = rm_val.bit(32 - amount);
-                    } else if amount == 32 {
+                    } else if shift_imm < 32 {
+                        shifter_operand = rm_val << shift_imm;
+                        shifter_carry_out = rm_val.bit(32 - shift_imm as u8);
+                    } else if shift_imm == 32 {
                         shifter_operand = 0;
                         shifter_carry_out = rm_val.bit(0);
-                    } else /* amount > 32 */ {
+                    } else /* shift_imm > 32 */ {
                         shifter_operand = 0;
                         shifter_carry_out = false;
                     }
                 },
                 ShiftDirection::Lsr => {
-                    if amount == 0 {
+                    if shift_imm == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = cpu.cpsr.c();
-                    } else if amount < 32 {
-                        shifter_operand = rm_val >> amount;
-                        shifter_carry_out = rm_val.bit(amount - 1);
-                    } else if amount == 32 {
+                    } else if shift_imm < 32 {
+                        shifter_operand = rm_val >> shift_imm;
+                        shifter_carry_out = rm_val.bit(shift_imm as u8 - 1);
+                    } else if shift_imm == 32 {
                         shifter_operand = 0;
                         shifter_carry_out = rm_val.bit(31);
-                    } else /* amount > 32 */ {
+                    } else /* shift_imm > 32 */ {
                         shifter_operand = 0;
                         shifter_carry_out = false;
                     }
                 },
                 ShiftDirection::Asr => {
-                    if amount == 0 {
+                    if shift_imm == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = cpu.cpsr.c();
-                    } else if amount < 32 {
-                        shifter_operand = (rm_val as i32 >> amount) as u32;
-                        shifter_carry_out = rm_val.bit(amount - 1);
-                    } else /* amount >= 32 */ {
+                    } else if shift_imm < 32 {
+                        shifter_operand = (rm_val as i32 >> shift_imm) as u32;
+                        shifter_carry_out = rm_val.bit(shift_imm as u8 - 1);
+                    } else /* shift_imm >= 32 */ {
                         shifter_operand = if rm_val.bit(31) { 0xFFFFFFFF } else { 0 };
                         shifter_carry_out = rm_val.bit(31);
                     }
                 },
                 ShiftDirection::Ror => {
-                    let amount2 = amount.bits(0..4);
+                    let shift_imm2 = shift_imm.bits(0..4);
 
-                    if amount == 0 {
+                    if shift_imm == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = cpu.cpsr.c();
-                    } else if amount2 == 0 {
+                    } else if shift_imm2 == 0 {
                         shifter_operand = rm_val;
                         shifter_carry_out = rm_val.bit(31);
-                    } else /* amount2 > 0 */ {
-                        shifter_operand = rm_val.rotate_right(amount2 as u32);
-                        shifter_carry_out = rm_val.bit(amount2 as u8 - 1);
+                    } else /* shift_imm2 > 0 */ {
+                        shifter_operand = rm_val.rotate_right(shift_imm2 as u32);
+                        shifter_carry_out = rm_val.bit(shift_imm2 as u8 - 1);
                     }
                 },
                 ShiftDirection::Rrx => {
@@ -552,49 +553,53 @@ fn addr_mode_1(cpu: &Cpu, address: AddressMode1) -> (u32, bool) {
 }
 
 fn addr_mode_2(cpu: &mut Cpu, address: AddressMode2) -> u32 {
-    let AddressMode2 { i, p, u, w, rn, offset } = address;
+    let AddressMode2 { rn, offset, addressing, u } = address;
 
-    let offset_val = if i {
-        let shift_imm = offset.bits(7..12);
-        let shift = offset.bits(5..7);
-        let rm = Register(offset.bits(0..4));
-        let rm_val = cpu.regs[rm];
-
-        let index = match shift {
-            0b00 => { // Logical shift left
-                rm_val << shift_imm
-            },
-            0b01 => { // Logical shift right
-                if shift_imm == 0 { 0 } else { rm_val >> shift_imm }
-            },
-            0b10 => { // Arithmetic shift right
-                if shift_imm == 0 {
-                    if rm_val.bit(31) { 0xFFFFFFFF } else { 0 }
-                } else {
-                    (rm_val as i32 >> shift_imm) as u32
-                }
-            },
-            0b11 => {
-                if shift_imm == 0 { // Rotate right with extend
+    let offset_val = match offset {
+        AddressingOffset::Immediate(offset) => offset as u32,
+        AddressingOffset::Register(rm) => cpu.regs[rm],
+        AddressingOffset::ScaledRegister { rm, shift, shift_imm } => {
+            let rm_val = cpu.regs[rm];
+            match shift {
+                ShiftDirection::Lsl => {
+                    rm_val << shift_imm
+                },
+                ShiftDirection::Lsr => {
+                    if shift_imm == 0 { 0 } else { rm_val >> shift_imm }
+                },
+                ShiftDirection::Asr => {
+                    if shift_imm == 0 {
+                        if rm_val.bit(31) { 0xFFFFFFFF } else { 0 }
+                    } else {
+                        (rm_val as i32 >> shift_imm) as u32
+                    }
+                },
+                ShiftDirection::Rrx => {
                     (if cpu.cpsr.c() { 1 } else { 0 }) << 31 | rm_val >> 1
-                } else { // Rotate right
-                    rm_val.rotate_right(shift_imm)
-                }
-            },
-            _ => unreachable!(),
-        };
-
-        cpu.regs[rm]
-    } else {
-        offset
+                },
+                ShiftDirection::Ror => {
+                    rm_val.rotate_right(shift_imm as u32)
+                },
+            }
+        },
     };
 
     let rn_val = cpu.regs[rn];
     let value = if u { rn_val + offset_val } else { rn_val - offset_val };
-    let address = if p { value } else { rn_val };
-    if !p || w { cpu.regs[rn] = value };
 
-    address
+    match addressing {
+        AddressingMode::Offset => {
+            value
+        },
+        AddressingMode::PreIndexed => {
+            cpu.regs[rn] = value;
+            value
+        },
+        AddressingMode::PostIndexed => {
+            cpu.regs[rn] = value;
+            rn_val
+        },
+    }
 }
 
 fn addr_mode_3(cpu: &mut Cpu, address: AddressMode3) -> u32 {
@@ -603,6 +608,7 @@ fn addr_mode_3(cpu: &mut Cpu, address: AddressMode3) -> u32 {
     let offset_val = match offset {
         AddressingOffset::Immediate(byte) => byte as u32,
         AddressingOffset::Register(rm) => cpu.regs[rm],
+        AddressingOffset::ScaledRegister { .. } => unreachable!(),
     };
 
     let rn_val = cpu.regs[rn];

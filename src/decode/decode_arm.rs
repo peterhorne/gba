@@ -394,14 +394,7 @@ fn ldr(inst: u32) -> Instruction {
     Instruction::Ldr {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -409,14 +402,7 @@ fn ldrb(inst: u32) -> Instruction {
     Instruction::Ldrb {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -424,14 +410,7 @@ fn str(inst: u32) -> Instruction {
     Instruction::Str {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -439,14 +418,7 @@ fn strb(inst: u32) -> Instruction {
     Instruction::Strb {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -454,14 +426,7 @@ fn ldrbt(inst: u32) -> Instruction {
     Instruction::Ldrbt {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -469,14 +434,7 @@ fn ldrt(inst: u32) -> Instruction {
     Instruction::Ldrt {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -484,14 +442,7 @@ fn strbt(inst: u32) -> Instruction {
     Instruction::Strbt {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -499,14 +450,7 @@ fn strt(inst: u32) -> Instruction {
     Instruction::Strt {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode2 {
-            i: inst.bit(25),
-            p: inst.bit(24),
-            u: inst.bit(23),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset: inst.bits(0..12),
-        },
+        address: decode_address_mode_2(inst),
     }
 }
 
@@ -594,7 +538,7 @@ fn decode_address_mode_1(inst: u32) -> AddressMode1 {
     } else {
         AddressMode1::Shift {
             rm: Register(inst.bits(0..4)),
-            direction: match inst.bits(5..7) {
+            shift: match inst.bits(5..7) {
                 0b00 => { ShiftDirection::Lsl },
                 0b01 => { ShiftDirection::Lsr },
                 0b10 => { ShiftDirection::Asr },
@@ -602,12 +546,58 @@ fn decode_address_mode_1(inst: u32) -> AddressMode1 {
                 0b11 => { ShiftDirection::Ror },
                 _ => { unreachable!() },
             },
-            amount: if inst.bit(4) {
+            shift_imm: if inst.bit(4) {
                 AddressingOffset::Register(Register(inst.bits(8..12)))
             } else {
-                AddressingOffset::Immediate(inst.bits(7..12) as u8)
+                AddressingOffset::Immediate(inst.bits(7..12) as u16)
             },
         }
+    }
+}
+
+fn decode_address_mode_2(inst: u32) -> AddressMode2 {
+    let i = inst.bit(25);
+    let p = inst.bit(24);
+    let u = inst.bit(23);
+    let w = inst.bit(21);
+    let rn = Register(inst.bits(16..20));
+    let offset = inst.bits(0..12);
+    let shift_imm = inst.bits(7..12);
+    let shift = inst.bits(5..7);
+    let rm = Register(inst.bits(0..4));
+
+    let offset = if i {
+        if inst.bits(4..12) == 0 {
+            AddressingOffset::Register(rm)
+        } else {
+            AddressingOffset::ScaledRegister {
+                rm: rm,
+                shift: match shift {
+                    0b00 => { ShiftDirection::Lsl },
+                    0b01 => { ShiftDirection::Lsr },
+                    0b10 => { ShiftDirection::Asr },
+                    0b11 if shift_imm == 0 => { ShiftDirection::Rrx },
+                    0b11 => { ShiftDirection::Ror },
+                    _ => { unreachable!() },
+                },
+                shift_imm: shift_imm as u8,
+            }
+        }
+    } else {
+        AddressingOffset::Immediate(offset as u16)
+    };
+
+    let addressing =
+        if p && w { AddressingMode::PreIndexed }
+        else if p && !w { AddressingMode::Offset }
+        else if !p && w { panic!("unpredictable") } // TODO: not unpredictable for address mode 2
+        else /* !p && !w  */ { AddressingMode::PostIndexed };
+
+    AddressMode2 {
+        rn: rn,
+        offset: offset,
+        addressing: addressing,
+        u: u,
     }
 }
 
@@ -622,7 +612,7 @@ fn decode_address_mode_3(inst: u32) -> AddressMode3 {
 
     let offset = if i {
         let byte = (offset_a << 4) | offset_b;
-        AddressingOffset::Immediate(byte as u8)
+        AddressingOffset::Immediate(byte as u16)
     } else {
         let register = Register(offset_b);
         AddressingOffset::Register(register)
