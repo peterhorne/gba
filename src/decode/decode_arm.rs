@@ -6,7 +6,8 @@ use instruction::{
     AddressMode3,
     Condition,
     Instruction,
-    ShiftAmount,
+    AddressingOffset,
+    AddressingMode,
     ShiftDirection,
 };
 
@@ -122,10 +123,10 @@ fn umull(inst: u32) -> Instruction {
     Instruction::Umull {
         condition: condition(inst),
         s: inst.bit(20),
-        rd: Register(inst.bits(16..20)),
-        rn: Register(inst.bits(12..16)),
-        rm: Register(inst.bits(0..4)),
+        rd_hi: Register(inst.bits(16..20)),
+        rd_lo: Register(inst.bits(12..16)),
         rs: Register(inst.bits(8..12)),
+        rm: Register(inst.bits(0..4)),
     }
 }
 
@@ -133,10 +134,10 @@ fn umlal(inst: u32) -> Instruction {
     Instruction::Umlal {
         condition: condition(inst),
         s: inst.bit(20),
-        rd: Register(inst.bits(16..20)),
-        rn: Register(inst.bits(12..16)),
-        rm: Register(inst.bits(0..4)),
+        rd_hi: Register(inst.bits(16..20)),
+        rd_lo: Register(inst.bits(12..16)),
         rs: Register(inst.bits(8..12)),
+        rm: Register(inst.bits(0..4)),
     }
 }
 
@@ -144,10 +145,10 @@ fn smull(inst: u32) -> Instruction {
     Instruction::Smull {
         condition: condition(inst),
         s: inst.bit(20),
-        rd: Register(inst.bits(16..20)),
-        rn: Register(inst.bits(12..16)),
-        rm: Register(inst.bits(0..4)),
+        rd_hi: Register(inst.bits(16..20)),
+        rd_lo: Register(inst.bits(12..16)),
         rs: Register(inst.bits(8..12)),
+        rm: Register(inst.bits(0..4)),
     }
 }
 
@@ -155,10 +156,10 @@ fn smlal(inst: u32) -> Instruction {
     Instruction::Smlal {
         condition: condition(inst),
         s: inst.bit(20),
-        rd: Register(inst.bits(16..20)),
-        rn: Register(inst.bits(12..16)),
-        rm: Register(inst.bits(0..4)),
+        rd_hi: Register(inst.bits(16..20)),
+        rd_lo: Register(inst.bits(12..16)),
         rs: Register(inst.bits(8..12)),
+        rm: Register(inst.bits(0..4)),
     }
 }
 
@@ -211,15 +212,7 @@ fn ldrh(inst: u32) -> Instruction {
     Instruction::Ldrh {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode3 {
-            p: inst.bit(24),
-            u: inst.bit(23),
-            i: inst.bit(22),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset_a: inst.bits(8..12),
-            offset_b: inst.bits(0..4),
-        },
+        address: decode_address_mode_3(inst),
     }
 }
 
@@ -227,15 +220,7 @@ fn strh(inst: u32) -> Instruction {
     Instruction::Strh {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode3 {
-            p: inst.bit(24),
-            u: inst.bit(23),
-            i: inst.bit(22),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset_a: inst.bits(8..12),
-            offset_b: inst.bits(0..4),
-        },
+        address: decode_address_mode_3(inst),
     }
 }
 
@@ -243,15 +228,7 @@ fn ldrsb(inst: u32) -> Instruction {
     Instruction::Ldrsb {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode3 {
-            p: inst.bit(24),
-            u: inst.bit(23),
-            i: inst.bit(22),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset_a: inst.bits(8..12),
-            offset_b: inst.bits(0..4),
-        },
+        address: decode_address_mode_3(inst),
     }
 }
 
@@ -259,15 +236,7 @@ fn ldrsh(inst: u32) -> Instruction {
     Instruction::Ldrsh {
         condition: condition(inst),
         rd: Register(inst.bits(12..16)),
-        address: AddressMode3 {
-            p: inst.bit(24),
-            u: inst.bit(23),
-            i: inst.bit(22),
-            w: inst.bit(21),
-            rn: Register(inst.bits(16..20)),
-            offset_a: inst.bits(8..12),
-            offset_b: inst.bits(0..4),
-        },
+        address: decode_address_mode_3(inst),
     }
 }
 
@@ -634,10 +603,41 @@ fn decode_address_mode_1(inst: u32) -> AddressMode1 {
                 _ => { unreachable!() },
             },
             amount: if inst.bit(4) {
-                ShiftAmount::Register(Register(inst.bits(8..12)))
+                AddressingOffset::Register(Register(inst.bits(8..12)))
             } else {
-                ShiftAmount::Immediate(inst.bits(7..12) as u8)
+                AddressingOffset::Immediate(inst.bits(7..12) as u8)
             },
         }
+    }
+}
+
+fn decode_address_mode_3(inst: u32) -> AddressMode3 {
+    let p = inst.bit(24);
+    let u = inst.bit(23);
+    let i = inst.bit(22);
+    let w = inst.bit(21);
+    let rn = Register(inst.bits(16..20));
+    let offset_a = inst.bits(8..12);
+    let offset_b = inst.bits(0..4);
+
+    let offset = if i {
+        let byte = (offset_a << 4) | offset_b;
+        AddressingOffset::Immediate(byte as u8)
+    } else {
+        let register = Register(offset_b);
+        AddressingOffset::Register(register)
+    };
+
+    let addressing =
+        if p && w { AddressingMode::PreIndexed }
+        else if p && !w { AddressingMode::Offset }
+        else if !p && w { panic!("unpredictable") }
+        else /* !p && !w  */ { AddressingMode::PostIndexed };
+
+    AddressMode3 {
+        rn: rn,
+        offset: offset,
+        addressing: addressing,
+        u: u,
     }
 }

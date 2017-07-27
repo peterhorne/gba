@@ -27,10 +27,10 @@ pub enum Instruction {
     // Multiply
     Mul { condition: Condition, s: bool, rd: Register, rm: Register, rs: Register },
     Mla { condition: Condition, s: bool, rd: Register, rn: Register, rm: Register, rs: Register },
-    Umull { condition: Condition, s: bool, rd: Register, rn: Register, rm: Register, rs: Register },
-    Umlal { condition: Condition, s: bool, rd: Register, rn: Register, rm: Register, rs: Register },
-    Smull { condition: Condition, s: bool, rd: Register, rn: Register, rm: Register, rs: Register },
-    Smlal { condition: Condition, s: bool, rd: Register, rn: Register, rm: Register, rs: Register },
+    Umull { condition: Condition, s: bool, rd_lo: Register, rd_hi: Register, rm: Register, rs: Register },
+    Umlal { condition: Condition, s: bool, rd_lo: Register, rd_hi: Register, rm: Register, rs: Register },
+    Smull { condition: Condition, s: bool, rd_lo: Register, rd_hi: Register, rm: Register, rs: Register },
+    Smlal { condition: Condition, s: bool, rd_lo: Register, rd_hi: Register, rm: Register, rs: Register },
 
     // Status register access
     Msr { condition: Condition, c: bool, x: bool, s: bool, f: bool, r: bool, address: AddressMode1 },
@@ -156,12 +156,12 @@ pub enum Condition {
 pub enum AddressMode1 {
     Immediate {
         value: u8,
-        rotate: u8
+        rotate: u8,
     },
     Shift {
         rm: Register,
         direction: ShiftDirection,
-        amount: ShiftAmount
+        amount: AddressingOffset,
     },
 }
 
@@ -175,7 +175,7 @@ pub enum ShiftDirection {
 }
 
 #[derive(PartialEq)]
-pub enum ShiftAmount {
+pub enum AddressingOffset {
     Immediate(u8),
     Register(Register),
 }
@@ -192,13 +192,17 @@ pub struct AddressMode2 {
 
 #[derive(PartialEq)]
 pub struct AddressMode3 {
-    pub p: bool,
-    pub u: bool,
-    pub i: bool,
-    pub w: bool,
     pub rn: Register,
-    pub offset_a: u32,
-    pub offset_b: u32,
+    pub offset: AddressingOffset,
+    pub addressing: AddressingMode,
+    pub u: bool,
+}
+
+#[derive(PartialEq)]
+pub enum AddressingMode {
+    Offset,
+    PreIndexed,
+    PostIndexed,
 }
 
 impl fmt::Display for Instruction {
@@ -352,64 +356,109 @@ impl fmt::Display for Instruction {
                         format_address_mode_1(operand2))
             },
 
-            Instruction::Mul { condition, .. } => {
-                format!("mul{}",
-                        format_condition(condition))
+            Instruction::Mul { condition, s, rd, rm, rs } => {
+                format!("mul{}{}\t{}, {}, {}",
+                        format_condition(condition),
+                        format_bool(s, "s"),
+                        format_register(rd),
+                        format_register(rm),
+                        format_register(rs))
             },
 
-            Instruction::Mla { condition, .. } => {
-                format!("mla{}",
-                        format_condition(condition))
+            Instruction::Mla { condition, s, rd, rm, rs, rn } => {
+                format!("mla{}{}\t{}, {}, {}, {}",
+                        format_condition(condition),
+                        format_bool(s, "s"),
+                        format_register(rd),
+                        format_register(rm),
+                        format_register(rs),
+                        format_register(rn))
             },
 
-            Instruction::Umull { condition, .. } => {
-                format!("umull{}",
-                        format_condition(condition))
+            Instruction::Umull { condition, s, rd_lo, rd_hi, rm, rs } => {
+                format!("umull{}{}\t{}, {}, {}, {}",
+                        format_condition(condition),
+                        format_bool(s, "s"),
+                        format_register(rd_lo),
+                        format_register(rd_hi),
+                        format_register(rm),
+                        format_register(rs))
             },
 
-            Instruction::Umlal { condition, .. } => {
-                format!("umlal{}",
-                        format_condition(condition))
+            Instruction::Umlal { condition, s, rd_lo, rd_hi, rm, rs } => {
+                format!("umlal{}{}\t{}, {}, {}, {}",
+                        format_condition(condition),
+                        format_bool(s, "s"),
+                        format_register(rd_lo),
+                        format_register(rd_hi),
+                        format_register(rm),
+                        format_register(rs))
             },
 
-            Instruction::Smull { condition, .. } => {
-                format!("smull{}",
-                        format_condition(condition))
+            Instruction::Smull { condition, s, rd_lo, rd_hi, rm, rs } => {
+                format!("smull{}{}\t{}, {}, {}, {}",
+                        format_condition(condition),
+                        format_bool(s, "s"),
+                        format_register(rd_lo),
+                        format_register(rd_hi),
+                        format_register(rm),
+                        format_register(rs))
             },
 
-            Instruction::Smlal { condition, .. } => {
-                format!("smlal{}",
-                        format_condition(condition))
+            Instruction::Smlal { condition, s, rd_lo, rd_hi, rm, rs } => {
+                format!("smlal{}{}\t{}, {}, {}, {}",
+                        format_condition(condition),
+                        format_bool(s, "s"),
+                        format_register(rd_lo),
+                        format_register(rd_hi),
+                        format_register(rm),
+                        format_register(rs))
             },
 
-            Instruction::Msr { condition, .. } => {
-                format!("msr{}",
-                        format_condition(condition))
+            Instruction::Msr { condition, r, c, x, s, f, ref address } => {
+                format!("msr{}\t{}_{}{}{}{}, {}",
+                        format_condition(condition),
+                        if r { "spsr" } else { "cpsr" },
+                        format_bool(c, "c"),
+                        format_bool(x, "x"),
+                        format_bool(s, "s"),
+                        format_bool(f, "f"),
+                        format_address_mode_1(address))
             },
 
-            Instruction::Mrs { condition, .. } => {
-                format!("mrs{}",
-                        format_condition(condition))
+            Instruction::Mrs { condition, rd, r } => {
+                format!("mrs{}\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        if r { "spsr" } else { "cpsr" })
             },
 
-            Instruction::Ldrh { condition, .. } => {
-                format!("ldrh{}",
-                        format_condition(condition))
+            Instruction::Ldrh { condition, rd, ref address } => {
+                format!("ldr{}h\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_3(address))
             },
 
-            Instruction::Ldrsb { condition, .. } => {
-                format!("ldrsb{}",
-                        format_condition(condition))
+            Instruction::Ldrsb { condition, rd, ref address } => {
+                format!("ldr{}sb\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_3(address))
             },
 
-            Instruction::Ldrsh { condition, .. } => {
-                format!("ldrsh{}",
-                        format_condition(condition))
+            Instruction::Ldrsh { condition, rd, ref address } => {
+                format!("ldr{}sh\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_3(address))
             },
 
-            Instruction::Strh { condition, .. } => {
-                format!("strh{}",
-                        format_condition(condition))
+            Instruction::Strh { condition, rd, ref address } => {
+                format!("str{}h\t{}, {}",
+                        format_condition(condition),
+                        format_register(rd),
+                        format_address_mode_3(address))
             },
 
             Instruction::Ldrbt { condition, .. } => {
@@ -533,10 +582,10 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
             let rm = format_register(rm);
 
             let formatted_amount = match *amount {
-                ShiftAmount::Immediate(value) => {
+                AddressingOffset::Immediate(value) => {
                     (if value == 0 { 32 } else { value }).to_string()
                 },
-                ShiftAmount::Register(register) => {
+                AddressingOffset::Register(register) => {
                     format_register(register)
                 }
             };
@@ -546,7 +595,7 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
                     format!("{}, asr {}", rm, formatted_amount)
                 },
                 ShiftDirection::Lsl => {
-                    if *amount == ShiftAmount::Immediate(0) { return rm };
+                    if *amount == AddressingOffset::Immediate(0) { return rm };
                     format!("{}, lsl {}", rm, formatted_amount)
                 },
                 ShiftDirection::Lsr => {
@@ -560,6 +609,28 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
                 },
             }
         }
+    }
+}
+
+fn format_address_mode_3(address: &AddressMode3) -> String {
+    let AddressMode3 { rn, ref offset, ref addressing, u } = *address;
+    let formatted_offset = match *offset {
+        AddressingOffset::Immediate(byte) => { format!("{:x}", byte) },
+        AddressingOffset::Register(register) => { format_register(register) },
+    };
+
+    let signed_offset = format!("#{}{}", format_bool(!u, "-"), formatted_offset);
+
+    match *addressing {
+        AddressingMode::Offset => {
+            format!("[{}, {}]", format_register(rn), signed_offset)
+        },
+        AddressingMode::PreIndexed => {
+            format!("[{}, {}]!", format_register(rn), signed_offset)
+        },
+        AddressingMode::PostIndexed => {
+            format!("[{}], {}", format_register(rn), signed_offset)
+        },
     }
 }
 

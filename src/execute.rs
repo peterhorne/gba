@@ -7,7 +7,8 @@ use instruction::{
     AddressMode1,
     AddressMode2,
     AddressMode3,
-    ShiftAmount,
+    AddressingOffset,
+    AddressingMode,
     ShiftDirection,
 };
 
@@ -271,19 +272,19 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             unimplemented!();
         },
 
-        Instruction::Umull { s, rd, rn, rm, rs, .. } => {
+        Instruction::Umull { s, rd_hi, rd_lo, rm, rs, .. } => {
             unimplemented!();
         },
 
-        Instruction::Umlal { s, rd, rn, rm, rs, .. } => {
+        Instruction::Umlal { s, rd_hi, rd_lo, rm, rs, .. } => {
             unimplemented!();
         },
 
-        Instruction::Smull { s, rd, rn, rm, rs, .. } => {
+        Instruction::Smull { s, rd_hi, rd_lo, rm, rs, .. } => {
             unimplemented!();
         },
 
-        Instruction::Smlal { s, rd, rn, rm, rs, .. } => {
+        Instruction::Smlal { s, rd_hi, rd_lo, rm, rs, .. } => {
             unimplemented!();
         },
 
@@ -477,8 +478,8 @@ fn addr_mode_1(cpu: &Cpu, address: AddressMode1) -> (u32, bool) {
         AddressMode1::Shift { rm, direction, amount } => {
             let rm_val = cpu.regs[rm];
             let amount = match amount {
-                ShiftAmount::Immediate(value) => { value },
-                ShiftAmount::Register(rs) => { cpu.regs[rs].bits(0..8) as u8 },
+                AddressingOffset::Immediate(value) => { value },
+                AddressingOffset::Register(rs) => { cpu.regs[rs].bits(0..8) as u8 },
             };
 
             match direction {
@@ -597,20 +598,29 @@ fn addr_mode_2(cpu: &mut Cpu, address: AddressMode2) -> u32 {
 }
 
 fn addr_mode_3(cpu: &mut Cpu, address: AddressMode3) -> u32 {
-    let AddressMode3 { p, u, i, w, rn, offset_a, offset_b } = address;
-    if !p && w { panic!("unpredictable"); }
+    let AddressMode3 { rn, offset, addressing, u } = address;
 
-    let offset = if i {
-        (offset_a << 4) | offset_b
-    } else {
-        cpu.regs[Register(offset_b)] // rm
+    let offset_val = match offset {
+        AddressingOffset::Immediate(byte) => byte as u32,
+        AddressingOffset::Register(rm) => cpu.regs[rm],
     };
-    let rn_val = cpu.regs[rn];
-    let value = if u { rn_val + offset } else { rn_val - offset };
-    let address = if p { value } else { rn_val };
-    if !p || w { cpu.regs[rn] = value };
 
-    address
+    let rn_val = cpu.regs[rn];
+    let value = if u { rn_val + offset_val } else { rn_val - offset_val };
+
+    match addressing {
+        AddressingMode::Offset => {
+            value
+        },
+        AddressingMode::PreIndexed => {
+            cpu.regs[rn] = value;
+            value
+        },
+        AddressingMode::PostIndexed => {
+            cpu.regs[rn] = value;
+            rn_val
+        },
+    }
 }
 
 // Arithmetic flags
