@@ -571,6 +571,7 @@ impl fmt::Display for Instruction {
     }
 }
 
+// TODO: implement display for AddressMode1
 fn format_address_mode_1(address: &AddressMode1) -> String {
     match *address {
         AddressMode1::Immediate { value, rotate } => {
@@ -612,6 +613,7 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
     }
 }
 
+// TODO: implement display for AddressMode3
 fn format_address_mode_3(address: &AddressMode3) -> String {
     let AddressMode3 { rn, ref offset, ref addressing, u } = *address;
     let formatted_offset = match *offset {
