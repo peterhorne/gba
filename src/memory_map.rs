@@ -3,15 +3,15 @@ use memory::Memory;
 use std::fs::File;
 use std::io::*;
 
-pub struct Mmu {
+pub struct MemoryMap {
     bios: BufReader<File>,
     rom: BufReader<File>,
     raw_memory: Memory,
 }
 
-impl Mmu {
-    pub fn new(bios: BufReader<File>, rom: BufReader<File>) -> Mmu {
-        Mmu {
+impl MemoryMap {
+    pub fn new(bios: BufReader<File>, rom: BufReader<File>) -> MemoryMap {
+        MemoryMap {
             bios: bios,
             rom: rom,
             raw_memory: Memory::new(),
@@ -79,7 +79,7 @@ impl Mmu {
     }
 }
 
-impl bus::Read for Mmu {
+impl bus::Read for MemoryMap {
     fn read_byte(&mut self, address: u32) -> u8 {
         match self.map_read(address) {
             Some((bus, offset)) => { bus.read_byte(offset) },
@@ -102,7 +102,7 @@ impl bus::Read for Mmu {
     }
 }
 
-impl bus::Write for Mmu {
+impl bus::Write for MemoryMap {
     fn write_byte(&mut self, address: u32, value: u8) {
         match self.map_write(address) {
             Some((bus, offset)) => { bus.write_byte(offset, value) },

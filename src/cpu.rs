@@ -3,7 +3,7 @@ use bus::{Read, Write};
 use core::ops::Range;
 use decode::{decode_arm, decode_thumb};
 use execute::execute;
-use mmu::Mmu;
+use memory_map::MemoryMap;
 use std::ops::{Index, IndexMut};
 
 pub struct Cpu {
@@ -20,11 +20,11 @@ pub struct Cpu {
     // Saved Program Status Register
     pub spsr: ProgramStatusRegister,
 
-    pub memory: Mmu,
+    pub memory: MemoryMap,
 }
 
 impl Cpu {
-    pub fn new(memory: Mmu) -> Cpu {
+    pub fn new(memory: MemoryMap) -> Cpu {
         Cpu {
             regs: Registers::new(),
             cpsr: ProgramStatusRegister::new(),
