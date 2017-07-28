@@ -210,530 +210,587 @@ pub enum AddressingMode {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let value = match *self {
+        match *self {
             Instruction::B { condition, l, signed_immed } => {
-                format!("b{}{}\t0x{:x}",
-                        format_bool(l, "l"),
-                        format_condition(condition),
-                        // TODO: add PC
-                        ((((signed_immed as i32) << 8) >> 6) as u32) + 8)
+                // TODO: add PC
+                let value = ((((signed_immed as i32) << 8) >> 6) as u32) + 8;
+                write!(f,
+                       "b{}{}\t0x{:x}",
+                       format_bool(l, "l"),
+                       condition,
+                       value)
             },
 
             Instruction::Bx { condition, rm } => {
-                format!("bx{}\t{}",
-                        format_condition(condition),
-                        format_register(rm))
+                write!(f,
+                       "bx{}\t{}",
+                       condition,
+                       rm)
             },
 
             Instruction::And { condition, s, rd, rn, ref operand2 } => {
-                format!("and{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "and{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Eor { condition, s, rd, rn, ref operand2 } => {
-                format!("eor{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "eor{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Sub { condition, s, rd, rn, ref operand2 } => {
-                format!("sub{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "sub{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Rsb { condition, s, rd, rn, ref operand2 } => {
-                format!("rsb{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "rsb{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Add { condition, s, rd, rn, ref operand2 } => {
-                format!("add{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "add{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Adc { condition, s, rd, rn, ref operand2 } => {
-                format!("adc{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "adc{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Sbc { condition, s, rd, rn, ref operand2 } => {
-                format!("sbc{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "sbc{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Rsc { condition, s, rd, rn, ref operand2 } => {
-                format!("rsc{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "rsc{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Tst { condition, rn, ref operand2 } => {
-                format!("tst{}\t{}, {}",
-                        format_condition(condition),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "tst{}\t{}, {}",
+                       condition,
+                       rn,
+                       operand2)
             },
 
             Instruction::Teq { condition, rn, ref operand2 } => {
-                format!("teq{}\t{}, {}",
-                        format_condition(condition),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "teq{}\t{}, {}",
+                       condition,
+                       rn,
+                       operand2)
             },
 
             Instruction::Cmp { condition, rn, ref operand2 } => {
-                format!("cmp{}\t{}, {}",
-                        format_condition(condition),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "cmp{}\t{}, {}",
+                       condition,
+                       rn,
+                       operand2)
             },
 
             Instruction::Cmn { condition, rn, ref operand2 } => {
-                format!("cmn{}\t{}, {}",
-                        format_condition(condition),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "cmn{}\t{}, {}",
+                       condition,
+                       rn,
+                       operand2)
             },
 
             Instruction::Orr { condition, s, rd, rn, ref operand2 } => {
-                format!("orr{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "orr{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Mov { condition, s, rd, ref operand2 } => {
-                format!("mov{}{}\t{}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "mov{}{}\t{}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       operand2)
             },
 
             Instruction::Bic { condition, s, rd, rn, ref operand2 } => {
-                format!("bic{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rn),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "bic{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rn,
+                       operand2)
             },
 
             Instruction::Mvn { condition, s, rd, ref operand2 } => {
-                format!("mvn{}{}\t{}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_address_mode_1(operand2))
+                write!(f,
+                       "mvn{}{}\t{}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       operand2)
             },
 
             Instruction::Mul { condition, s, rd, rm, rs } => {
-                format!("mul{}{}\t{}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rm),
-                        format_register(rs))
+                write!(f,
+                       "mul{}{}\t{}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rm,
+                       rs)
             },
 
             Instruction::Mla { condition, s, rd, rm, rs, rn } => {
-                format!("mla{}{}\t{}, {}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd),
-                        format_register(rm),
-                        format_register(rs),
-                        format_register(rn))
+                write!(f,
+                       "mla{}{}\t{}, {}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd,
+                       rm,
+                       rs,
+                       rn)
             },
 
             Instruction::Umull { condition, s, rd_lo, rd_hi, rm, rs } => {
-                format!("umull{}{}\t{}, {}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd_lo),
-                        format_register(rd_hi),
-                        format_register(rm),
-                        format_register(rs))
+                write!(f,
+                       "umull{}{}\t{}, {}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd_lo,
+                       rd_hi,
+                       rm,
+                       rs)
             },
 
             Instruction::Umlal { condition, s, rd_lo, rd_hi, rm, rs } => {
-                format!("umlal{}{}\t{}, {}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd_lo),
-                        format_register(rd_hi),
-                        format_register(rm),
-                        format_register(rs))
+                write!(f,
+                       "umlal{}{}\t{}, {}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd_lo,
+                       rd_hi,
+                       rm,
+                       rs)
             },
 
             Instruction::Smull { condition, s, rd_lo, rd_hi, rm, rs } => {
-                format!("smull{}{}\t{}, {}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd_lo),
-                        format_register(rd_hi),
-                        format_register(rm),
-                        format_register(rs))
+                write!(f,
+                       "smull{}{}\t{}, {}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd_lo,
+                       rd_hi,
+                       rm,
+                       rs)
             },
 
             Instruction::Smlal { condition, s, rd_lo, rd_hi, rm, rs } => {
-                format!("smlal{}{}\t{}, {}, {}, {}",
-                        format_condition(condition),
-                        format_bool(s, "s"),
-                        format_register(rd_lo),
-                        format_register(rd_hi),
-                        format_register(rm),
-                        format_register(rs))
+                write!(f,
+                       "smlal{}{}\t{}, {}, {}, {}",
+                       condition,
+                       format_bool(s, "s"),
+                       rd_lo,
+                       rd_hi,
+                       rm,
+                       rs)
             },
 
-            Instruction::Msr { condition, r, c, x, s, f, ref address } => {
-                format!("msr{}\t{}_{}{}{}{}, {}",
-                        format_condition(condition),
-                        if r { "spsr" } else { "cpsr" },
-                        format_bool(c, "c"),
-                        format_bool(x, "x"),
-                        format_bool(s, "s"),
-                        format_bool(f, "f"),
-                        format_address_mode_1(address))
+            Instruction::Msr { condition, r, c, x, s, f: f2, ref address } => {
+                write!(f,
+                       "msr{}\t{}_{}{}{}{}, {}",
+                       condition,
+                       if r { "spsr" } else { "cpsr" },
+                       format_bool(c, "c"),
+                       format_bool(x, "x"),
+                       format_bool(s, "s"),
+                       format_bool(f2, "f"),
+                       address)
             },
 
             Instruction::Mrs { condition, rd, r } => {
-                format!("mrs{}\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        if r { "spsr" } else { "cpsr" })
+                write!(f,
+                       "mrs{}\t{}, {}",
+                       condition,
+                       rd,
+                       if r { "spsr" } else { "cpsr" })
             },
 
             Instruction::Ldrh { condition, rd, ref address } => {
-                format!("ldr{}h\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_3(address))
+                write!(f,
+                       "ldr{}h\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Ldrsb { condition, rd, ref address } => {
-                format!("ldr{}sb\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_3(address))
+                write!(f,
+                       "ldr{}sb\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Ldrsh { condition, rd, ref address } => {
-                format!("ldr{}sh\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_3(address))
+                write!(f,
+                       "ldr{}sh\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Strh { condition, rd, ref address } => {
-                format!("str{}h\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_3(address))
+                write!(f,
+                       "str{}h\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Ldrbt { condition, rd, ref address } => {
-                format!("ldr{}bt\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "ldr{}bt\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Ldrt { condition, rd, ref address } => {
-                format!("ldr{}t\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "ldr{}t\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Ldrb { condition, rd, ref address } => {
-                format!("ldr{}b\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "ldr{}b\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Ldr { condition, rd, ref address } => {
-                format!("ldr{}\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "ldr{}\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Strbt { condition, rd, ref address } => {
-                format!("str{}bt\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "str{}bt\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Strt { condition, rd, ref address } => {
-                format!("str{}t\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "str{}t\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Strb { condition, rd, ref address } => {
-                format!("str{}b\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "str{}b\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Str { condition, rd, ref address } => {
-                format!("str{}\t{}, {}",
-                        format_condition(condition),
-                        format_register(rd),
-                        format_address_mode_2(address))
+                write!(f,
+                       "str{}\t{}, {}",
+                       condition,
+                       rd,
+                       address)
             },
 
             Instruction::Ldm1 { condition, .. } => {
-                format!("ldm1{}",
-                        format_condition(condition))
+                write!(f,
+                       "ldm1{}",
+                       condition)
             },
 
             Instruction::Ldm2 { condition, .. } => {
-                format!("ldm2{}",
-                        format_condition(condition))
+                write!(f,
+                       "ldm2{}",
+                       condition)
             },
 
             Instruction::Ldm3 { condition, .. } => {
-                format!("ldm3{}",
-                        format_condition(condition))
+                write!(f,
+                       "ldm3{}",
+                       condition)
             },
 
             Instruction::Stm1 { condition, .. } => {
-                format!("stm1{}",
-                        format_condition(condition))
+                write!(f,
+                       "stm1{}",
+                       condition)
             },
 
             Instruction::Stm2 { condition, .. } => {
-                format!("stm2{}",
-                        format_condition(condition))
+                write!(f,
+                       "stm2{}",
+                       condition)
             },
 
             Instruction::Swpb { condition, .. } => {
-                format!("swpb{}",
-                        format_condition(condition))
+                write!(f,
+                       "swpb{}",
+                       condition)
             },
 
             Instruction::Swp { condition, .. } => {
-                format!("swp{}",
-                        format_condition(condition))
+                write!(f,
+                       "swp{}",
+                       condition)
             },
 
             Instruction::Swi { condition, .. } => {
-                format!("swi{}",
-                        format_condition(condition))
+                write!(f,
+                       "swi{}",
+                       condition)
             },
 
             Instruction::Cdp { condition, .. } => {
-                format!("cdp{}",
-                        format_condition(condition))
+                write!(f,
+                       "cdp{}",
+                       condition)
             },
 
             Instruction::Ldc { condition, .. } => {
-                format!("ldc{}",
-                        format_condition(condition))
+                write!(f,
+                       "ldc{}",
+                       condition)
             },
 
             Instruction::Mcr { condition, .. } => {
-                format!("mcr{}",
-                        format_condition(condition))
+                write!(f,
+                       "mcr{}",
+                       condition)
             },
 
             Instruction::Mrc { condition, .. } => {
-                format!("mrc{}",
-                        format_condition(condition))
+                write!(f,
+                       "mrc{}",
+                       condition)
             },
 
             Instruction::Stc { condition, .. } => {
-                format!("stc{}",
-                        format_condition(condition))
+                write!(f,
+                       "stc{}",
+                       condition)
             },
-        };
-
-        write!(f, "{}", value)
+        }
     }
 }
 
-// TODO: implement display for AddressMode1
-fn format_address_mode_1(address: &AddressMode1) -> String {
-    match *address {
-        AddressMode1::Immediate { value, rotate } => {
-            let immediate = (value as u32).rotate_right((rotate as u32) * 2);
-            format!("#{}", immediate)
-        },
+impl fmt::Display for AddressMode1 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            AddressMode1::Immediate { value, rotate } => {
+                let immediate = (value as u32).rotate_right((rotate as u32) * 2);
+                write!(f, "#{}", immediate)
+            },
 
-        AddressMode1::Shift { rm, ref shift, ref shift_imm } => {
-            let rm = format_register(rm);
+            AddressMode1::Shift { rm, ref shift, ref shift_imm } => {
+                let formatted_amount = match *shift_imm {
+                    AddressingOffset::Immediate(value) => {
+                        (if value == 0 { 32 } else { value }).to_string()
+                    },
+                    AddressingOffset::Register(register) => {
+                        format!("{}", register)
+                    },
+                    AddressingOffset::ScaledRegister { .. } => {
+                        unreachable!()
+                    },
+                };
 
-            let formatted_amount = match *shift_imm {
-                AddressingOffset::Immediate(value) => {
-                    (if value == 0 { 32 } else { value }).to_string()
-                },
-                AddressingOffset::Register(register) => {
-                    format_register(register)
-                },
-                AddressingOffset::ScaledRegister { .. } => {
-                    unreachable!()
-                },
-            };
-
-            match *shift {
-                ShiftDirection::Asr => {
-                    format!("{}, asr {}", rm, formatted_amount)
-                },
-                ShiftDirection::Lsl => {
-                    if *shift_imm == AddressingOffset::Immediate(0) { return rm };
-                    format!("{}, lsl {}", rm, formatted_amount)
-                },
-                ShiftDirection::Lsr => {
-                    format!("{}, lsr {}", rm, formatted_amount)
-                },
-                ShiftDirection::Ror => {
-                    format!("{}, ror {}", rm, formatted_amount)
-                },
-                ShiftDirection::Rrx => {
-                    format!("{}, rrx", rm)
-                },
+                match *shift {
+                    ShiftDirection::Asr => {
+                        write!(f, "{}, asr {}", rm, formatted_amount)
+                    },
+                    ShiftDirection::Lsl => {
+                        if *shift_imm == AddressingOffset::Immediate(0) {
+                            write!(f, "{}", rm)
+                        } else {
+                            write!(f, "{}, lsl {}", rm, formatted_amount)
+                        }
+                    },
+                    ShiftDirection::Lsr => {
+                        write!(f, "{}, lsr {}", rm, formatted_amount)
+                    },
+                    ShiftDirection::Ror => {
+                        write!(f, "{}, ror {}", rm, formatted_amount)
+                    },
+                    ShiftDirection::Rrx => {
+                        write!(f, "{}, rrx", rm)
+                    },
+                }
             }
         }
     }
 }
 
-// TODO: implement display for AddressMode2
-fn format_address_mode_2(address: &AddressMode2) -> String {
-    let AddressMode2 { rn, ref offset, ref addressing, u } = *address;
-    let formatted_offset = match *offset {
-        AddressingOffset::Immediate(byte) => format!("{}", byte),
-        AddressingOffset::Register(register) => format_register(register),
-        AddressingOffset::ScaledRegister { rm, ref shift, ref shift_imm } => {
-            // +/-<Rm>, <shift> #<shift_imm>
-            let rm = format_register(rm);
-            let shift_imm = (if *shift_imm == 0 { 32 } else { *shift_imm }).to_string();
+impl fmt::Display for AddressMode2 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let AddressMode2 { rn, ref offset, ref addressing, u } = *self;
+        let formatted_offset = match *offset {
+            AddressingOffset::Immediate(byte) => format!("{}", byte),
+            AddressingOffset::Register(register) => format!("{}", register),
+            AddressingOffset::ScaledRegister { rm, ref shift, ref shift_imm } => {
+                // +/-<Rm>, <shift> #<shift_imm>
+                let shift_imm = (if *shift_imm == 0 { 32 } else { *shift_imm }).to_string();
 
-            match *shift {
-                ShiftDirection::Asr => {
-                    format!("{}, asr {}", rm, shift_imm)
-                },
-                ShiftDirection::Lsl => {
-                    format!("{}, lsl {}", rm, shift_imm)
-                },
-                ShiftDirection::Lsr => {
-                    format!("{}, lsr {}", rm, shift_imm)
-                },
-                ShiftDirection::Ror => {
-                    format!("{}, ror {}", rm, shift_imm)
-                },
-                ShiftDirection::Rrx => {
-                    format!("{}, rrx", rm)
-                },
-            }
-        },
-    };
+                match *shift {
+                    ShiftDirection::Asr => {
+                        format!("{}, asr {}", rm, shift_imm)
+                    },
+                    ShiftDirection::Lsl => {
+                        format!("{}, lsl {}", rm, shift_imm)
+                    },
+                    ShiftDirection::Lsr => {
+                        format!("{}, lsr {}", rm, shift_imm)
+                    },
+                    ShiftDirection::Ror => {
+                        format!("{}, ror {}", rm, shift_imm)
+                    },
+                    ShiftDirection::Rrx => {
+                        format!("{}, rrx", rm)
+                    },
+                }
+            },
+        };
 
-    let signed_offset = format!("#{}{}", format_bool(!u, "-"), formatted_offset);
+        let signed_offset = format!("#{}{}", format_bool(!u, "-"), formatted_offset);
 
-    match *addressing {
-        AddressingMode::Offset =>
-            format!("[{}, {}]", format_register(rn), signed_offset),
-        AddressingMode::PreIndexed =>
-            format!("[{}, {}]!", format_register(rn), signed_offset),
-        AddressingMode::PostIndexed =>
-            format!("[{}], {}", format_register(rn), signed_offset),
+        match *addressing {
+            AddressingMode::Offset =>
+                write!(f, "[{}, {}]", rn, signed_offset),
+            AddressingMode::PreIndexed =>
+                write!(f, "[{}, {}]!", rn, signed_offset),
+            AddressingMode::PostIndexed =>
+                write!(f, "[{}], {}", rn, signed_offset),
+        }
     }
 }
 
-// TODO: implement display for AddressMode3
-fn format_address_mode_3(address: &AddressMode3) -> String {
-    let AddressMode3 { rn, ref offset, ref addressing, u } = *address;
-    let formatted_offset = match *offset {
-        AddressingOffset::Immediate(byte) => format!("{}", byte),
-        AddressingOffset::Register(register) => format_register(register),
-        AddressingOffset::ScaledRegister { .. } => unreachable!(),
-    };
+impl fmt::Display for AddressMode3 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let AddressMode3 { rn, ref offset, ref addressing, u } = *self;
+        let formatted_offset = match *offset {
+            AddressingOffset::Immediate(byte) => format!("{}", byte),
+            AddressingOffset::Register(register) => format!("{}", register),
+            AddressingOffset::ScaledRegister { .. } => unreachable!(),
+        };
 
-    let signed_offset = format!("#{}{}", format_bool(!u, "-"), formatted_offset);
+        let signed_offset = format!("#{}{}", format_bool(!u, "-"), formatted_offset);
 
-    match *addressing {
-        AddressingMode::Offset => {
-            format!("[{}, {}]", format_register(rn), signed_offset)
-        },
-        AddressingMode::PreIndexed => {
-            format!("[{}, {}]!", format_register(rn), signed_offset)
-        },
-        AddressingMode::PostIndexed => {
-            format!("[{}], {}", format_register(rn), signed_offset)
-        },
+        match *addressing {
+            AddressingMode::Offset => {
+                write!(f, "[{}, {}]", rn, signed_offset)
+            },
+            AddressingMode::PreIndexed => {
+                write!(f, "[{}, {}]!", rn, signed_offset)
+            },
+            AddressingMode::PostIndexed => {
+                write!(f, "[{}], {}", rn, signed_offset)
+            },
+        }
+    }
+}
+
+impl fmt::Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Condition::Eq => { write!(f, "eq") },
+            Condition::Ne => { write!(f, "ne") },
+            Condition::Cs => { write!(f, "cs") },
+            Condition::Cc => { write!(f, "cc") },
+            Condition::Mi => { write!(f, "mi") },
+            Condition::Pl => { write!(f, "pl") },
+            Condition::Vs => { write!(f, "vs") },
+            Condition::Vc => { write!(f, "vc") },
+            Condition::Hi => { write!(f, "hi") },
+            Condition::Ls => { write!(f, "ls") },
+            Condition::Ge => { write!(f, "ge") },
+            Condition::Lt => { write!(f, "lt") },
+            Condition::Gt => { write!(f, "gt") },
+            Condition::Le => { write!(f, "le") },
+            Condition::Al => { write!(f, "") },
+            Condition::Nv => { write!(f, "nv") },
+        }
+    }
+}
+
+impl fmt::Display for Register {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            i @ 0...11 => { write!(f, "r{}", i) },
+            12 => { write!(f, "ip") },
+            13 => { write!(f, "sp") },
+            14 => { write!(f, "lr") },
+            15 => { write!(f, "pc") },
+            _ => { unreachable!() }
+        }
     }
 }
 
 fn format_bool(value: bool, string: &str) -> &str {
     if value { string } else { "" }
-}
-
-fn format_condition<'a>(condition: Condition) -> &'a str {
-    match condition {
-        Condition::Eq => { "eq" },
-        Condition::Ne => { "ne" },
-        Condition::Cs => { "cs" },
-        Condition::Cc => { "cc" },
-        Condition::Mi => { "mi" },
-        Condition::Pl => { "pl" },
-        Condition::Vs => { "vs" },
-        Condition::Vc => { "vc" },
-        Condition::Hi => { "hi" },
-        Condition::Ls => { "ls" },
-        Condition::Ge => { "ge" },
-        Condition::Lt => { "lt" },
-        Condition::Gt => { "gt" },
-        Condition::Le => { "le" },
-        Condition::Al => { "" },
-        Condition::Nv => { "nv" },
-    }
-}
-
-fn format_register(register: Register) -> String {
-    match register.0 {
-        i @ 0...11 => { format!("r{}", i) },
-        12 => { "ip".to_string() },
-        13 => { "sp".to_string() },
-        14 => { "lr".to_string() },
-        15 => { "pc".to_string() },
-        _ => { unreachable!() }
-    }
 }
