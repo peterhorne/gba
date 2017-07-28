@@ -595,7 +595,7 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
     match *address {
         AddressMode1::Immediate { value, rotate } => {
             let immediate = (value as u32).rotate_right((rotate as u32) * 2);
-            format!("#{:x}", immediate)
+            format!("#{}", immediate)
         },
 
         AddressMode1::Shift { rm, ref shift, ref shift_imm } => {
@@ -639,7 +639,7 @@ fn format_address_mode_1(address: &AddressMode1) -> String {
 fn format_address_mode_2(address: &AddressMode2) -> String {
     let AddressMode2 { rn, ref offset, ref addressing, u } = *address;
     let formatted_offset = match *offset {
-        AddressingOffset::Immediate(byte) => format!("{:x}", byte),
+        AddressingOffset::Immediate(byte) => format!("{}", byte),
         AddressingOffset::Register(register) => format_register(register),
         AddressingOffset::ScaledRegister { rm, ref shift, ref shift_imm } => {
             // +/-<Rm>, <shift> #<shift_imm>
@@ -682,7 +682,7 @@ fn format_address_mode_2(address: &AddressMode2) -> String {
 fn format_address_mode_3(address: &AddressMode3) -> String {
     let AddressMode3 { rn, ref offset, ref addressing, u } = *address;
     let formatted_offset = match *offset {
-        AddressingOffset::Immediate(byte) => format!("{:x}", byte),
+        AddressingOffset::Immediate(byte) => format!("{}", byte),
         AddressingOffset::Register(register) => format_register(register),
         AddressingOffset::ScaledRegister { .. } => unreachable!(),
     };
