@@ -215,7 +215,7 @@ impl fmt::Display for Instruction {
                 // TODO: add PC
                 let value = ((((signed_immed as i32) << 8) >> 6) as u32) + 8;
                 write!(f,
-                       "b{}{}\t0x{:x}",
+                       "b{}{}\t{:#x}",
                        format_bool(l, "l"),
                        condition,
                        value)
@@ -645,13 +645,13 @@ impl fmt::Display for AddressMode1 {
         match *self {
             AddressMode1::Immediate { value, rotate } => {
                 let immediate = (value as u32).rotate_right((rotate as u32) * 2);
-                write!(f, "#{}", immediate)
+                write!(f, "#{:#x}", immediate)
             },
 
             AddressMode1::Shift { rm, ref shift, ref shift_imm } => {
                 let formatted_amount = match *shift_imm {
                     AddressingOffset::Immediate(value) => {
-                        (if value == 0 { 32 } else { value }).to_string()
+                        format!("{:#x}", if value == 0 { 32 } else { value })
                     },
                     AddressingOffset::Register(register) => {
                         format!("{}", register)
@@ -691,11 +691,13 @@ impl fmt::Display for AddressMode2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let AddressMode2 { rn, ref offset, ref addressing, u } = *self;
         let formatted_offset = match *offset {
-            AddressingOffset::Immediate(byte) => format!("{}", byte),
+            AddressingOffset::Immediate(byte) => format!("{:#x}", byte),
             AddressingOffset::Register(register) => format!("{}", register),
             AddressingOffset::ScaledRegister { rm, ref shift, ref shift_imm } => {
                 // +/-<Rm>, <shift> #<shift_imm>
-                let shift_imm = (if *shift_imm == 0 { 32 } else { *shift_imm }).to_string();
+
+                let shift_imm = if *shift_imm == 0 { 32 } else { *shift_imm };
+                let shift_imm = format!("{:#x}", shift_imm);
 
                 match *shift {
                     ShiftDirection::Asr => {
@@ -734,7 +736,7 @@ impl fmt::Display for AddressMode3 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let AddressMode3 { rn, ref offset, ref addressing, u } = *self;
         let formatted_offset = match *offset {
-            AddressingOffset::Immediate(byte) => format!("{}", byte),
+            AddressingOffset::Immediate(byte) => format!("{:#x}", byte),
             AddressingOffset::Register(register) => format!("{}", register),
             AddressingOffset::ScaledRegister { .. } => unreachable!(),
         };
