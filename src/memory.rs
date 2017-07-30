@@ -9,18 +9,18 @@ impl Memory {
 }
 
 impl bus::Read for Memory {
-    fn read_byte(&mut self, address: u32) -> u8 {
+    fn read_byte(&self, address: u32) -> u8 {
         println!("Memory#read {:x}", address);
         self.0[address as usize]
     }
 
-    fn read_halfword(&mut self, address: u32) -> u16 {
+    fn read_halfword(&self, address: u32) -> u16 {
         println!("Memory#read {:x}", address);
         (self.0[address as usize] as u16)
             + ((self.0[(address + 1) as usize] as u16) << 8)
     }
 
-    fn read_word(&mut self, address: u32) -> u32 {
+    fn read_word(&self, address: u32) -> u32 {
         println!("Memory#read {:x}", address);
         (self.0[address as usize] as u32)
             + ((self.0[(address + 1) as usize] as u32) << 8)
