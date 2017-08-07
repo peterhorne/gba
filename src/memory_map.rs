@@ -1,5 +1,4 @@
 use bus;
-use memory::Memory;
 use std::cell::RefCell;
 use std::fs::File;
 use std::io::*;
@@ -7,7 +6,6 @@ use std::io::*;
 pub struct MemoryMap {
     bios: RefCell<BufReader<File>>,
     rom: RefCell<BufReader<File>>,
-    raw_memory: Memory,
 }
 
 impl MemoryMap {
@@ -15,7 +13,6 @@ impl MemoryMap {
         MemoryMap {
             bios: RefCell::new(bios),
             rom: RefCell::new(rom),
-            raw_memory: Memory::new(),
         }
     }
 
@@ -23,29 +20,28 @@ impl MemoryMap {
         let offset = address & 0xFFFFFF;
         match address {
             // General Internal Memory
-            0x00000000...0x00003FFF => read(&self.bios, offset), // BIOS
-            0x00004000...0x01FFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
+            0x00000000...0x00003FFF => read(&self.bios, offset),
             0x02000000...0x0203FFFF => panic!("WRAM - On-board Work RAM"),
-            0x02040000...0x02FFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
             0x03000000...0x03007FFF => panic!("WRAM - On-chip Work RAM"),
-            0x03008000...0x03FFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
-            0x04000000...0x040003FE => panic!("I/O Registers"), // I/O Registers
-            0x04000400...0x04FFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
+            // I/O Map
+            0x04000000...0x04000056 => panic!("LCD I/O Registers"),
+            0x04000060...0x040000A8 => panic!("Sound Registers"),
+            0x040000B0...0x040000E0 => panic!("DMA Transfer Channels"),
+            0x04000100...0x04000110 => panic!("Timer Registers"),
+            0x04000120...0x0400012C => panic!("Serial Communication (1)"),
+            0x04000130...0x04000132 => panic!("Keypad Input"),
+            0x04000134...0x0400015A => panic!("Serial Communication (2)"),
+            0x04000200...0x040003FE => panic!("Interrupt, Waitstate, and Power-Down Control"),
             // Internal Display Memory
             0x05000000...0x050003FF => panic!("BG/OBJ Palette RAM"),
-            0x05000400...0x05FFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
             0x06000000...0x06017FFF => panic!("VRAM - Video RAM"),
-            0x06018000...0x06FFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
             0x07000000...0x070003FF => panic!("OAM - OBJ Attributes"),
-            0x07000400...0x07FFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
             // External Memory (Game Pak)
-            0x07ffffff...0x09FFFFFF => read(&self.rom, offset), // ROM
-            0x0A000000...0x0BFFFFFF => read(&self.rom, offset), // ROM
-            0x0C000000...0x0DFFFFFF => read(&self.rom, offset), // ROM
+            0x07ffffff...0x09FFFFFF => read(&self.rom, offset),
+            0x0A000000...0x0BFFFFFF => read(&self.rom, offset),
+            0x0C000000...0x0DFFFFFF => read(&self.rom, offset),
             0x0E000000...0x0E00FFFF => panic!("Game Pak SRAM"),
-            0x0E010000...0x0FFFFFFF => panic!("Memory address {:x} is unreadable", address), // Unused
-            // Unused Memory Area
-            _ /* 0x10000000...0xFFFFFFFF */ => panic!("Memory address {:x} is unreadable", address),
+            _ => panic!("Memory address {:#x} is unreadable", address),
         }
     }
 
@@ -53,29 +49,24 @@ impl MemoryMap {
         let offset = address & 0xFFFFFF;
         match address {
             // General Internal Memory
-            0x00000000...0x00003FFF => panic!("Memory address {:x} is unwritable", address), // BIOS
-            0x00004000...0x01FFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
             0x02000000...0x0203FFFF => panic!("WRAM - On-board Work RAM"),
-            0x02040000...0x02FFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
             0x03000000...0x03007FFF => panic!("WRAM - On-chip Work RAM"),
-            0x03008000...0x03FFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
-            0x04000000...0x040003FE => panic!("I/O Registers"), // I/O Registers
-            0x04000400...0x04FFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
+            // I/O Map
+            0x04000000...0x04000056 => panic!("LCD I/O Registers"),
+            0x04000060...0x040000A8 => panic!("Sound Registers"),
+            0x040000B0...0x040000E0 => panic!("DMA Transfer Channels"),
+            0x04000100...0x04000110 => panic!("Timer Registers"),
+            0x04000120...0x0400012C => panic!("Serial Communication (1)"),
+            0x04000130...0x04000132 => panic!("Keypad Input"),
+            0x04000134...0x0400015A => panic!("Serial Communication (2)"),
+            0x04000200...0x040003FE => panic!("Interrupt, Waitstate, and Power-Down Control"),
             // Internal Display Memory
             0x05000000...0x050003FF => panic!("BG/OBJ Palette RAM"),
-            0x05000400...0x05FFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
             0x06000000...0x06017FFF => panic!("VRAM - Video RAM"),
-            0x06018000...0x06FFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
             0x07000000...0x070003FF => panic!("OAM - OBJ Attributes"),
-            0x07000400...0x07FFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
             // External Memory (Game Pak)
-            0x08000000...0x09FFFFFF => panic!("Memory address {:x} is unwritable", address), // ROM
-            0x0A000000...0x0BFFFFFF => panic!("Memory address {:x} is unwritable", address), // ROM
-            0x0C000000...0x0DFFFFFF => panic!("Memory address {:x} is unwritable", address), // ROM
             0x0E000000...0x0E00FFFF => panic!("Game Pak SRAM"),
-            0x0E010000...0x0FFFFFFF => panic!("Memory address {:x} is unwritable", address), // Unused
-            // Unused Memory Area
-            _ /* 0x10000000...0xFFFFFFFF */ => panic!("Memory address {:x} is unwritable", address),
+            _ => panic!("Memory address {:#x} is unwritable", address),
         }
     }
 }
