@@ -1,6 +1,6 @@
 use bit::{Bit, Bits, SetBit, SetBits};
 use bus::{Read, Write};
-use cpu::{Cpu, Register};
+use cpu::{Cpu, LR, PC};
 use instruction::{
     Condition,
     Instruction,
@@ -23,19 +23,19 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
     match inst {
         Instruction::B { l, signed_immed, .. } => {
             if l {
-                let pc_val = cpu.regs[Register(15)];
-                cpu.regs[Register(14)] = pc_val + 4;
+                let pc_val = cpu.regs[PC];
+                cpu.regs[LR] = pc_val + 4;
             }
 
             let sign_extended = (((signed_immed as i32) << 8) >> 8) as u32;
             let target = (sign_extended << 2) + 8;
-            cpu.regs[Register(15)] += target;
+            cpu.regs[PC] += target;
         },
 
         Instruction::Bx { rm, .. } => {
             let rm_val = cpu.regs[rm];
             cpu.cpsr.set_t(rm_val.bit(0));
-            cpu.regs[Register(15)] = rm_val & 0xFFFFFFFE;
+            cpu.regs[PC] = rm_val & 0xFFFFFFFE;
         },
 
         Instruction::And { s, rd, rn, operand2, .. } => {
@@ -43,7 +43,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = cpu.regs[rn] & shifter_operand;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -57,7 +57,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = cpu.regs[rn] | shifter_operand;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -72,7 +72,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
 			let result = rn_val - shifter_operand;
 			cpu.regs[rd] = result;
 
-			if s && rd == Register(15) {
+			if s && rd == PC {
 				cpu.cpsr = cpu.spsr;
 			} else if s {
 				cpu.cpsr.set_n(result.bit(31));
@@ -88,7 +88,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = shifter_operand - rn_val;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -105,7 +105,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = result_long as u32;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -123,7 +123,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = result_long as u32;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -140,7 +140,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = rn_val - shifter_operand - not_c_flag;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -157,7 +157,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = shifter_operand - rn_val - not_c_flag;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -213,7 +213,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = rn_val | shifter_operand;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -226,7 +226,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let (shifter_operand, shifter_carry_out) = addr_mode_1(cpu, operand2);
             cpu.regs[rd] = shifter_operand;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(shifter_operand.bit(31));
@@ -241,7 +241,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = rn_val & !shifter_operand;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -255,7 +255,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let result = !shifter_operand;
             cpu.regs[rd] = result;
 
-            if s && rd == Register(15) {
+            if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
             } else if s {
                 cpu.cpsr.set_n(result.bit(31));
@@ -350,7 +350,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let rotation = address.bits(0..2);
             let result = value.rotate_right(8 * rotation);
 
-            cpu.regs[rd] = if rd == Register(15) {
+            cpu.regs[rd] = if rd == PC {
                 result & 0xFFFFFFFC
             } else {
                 result

@@ -23,6 +23,9 @@ pub struct Cpu {
     pub memory: MemoryMap,
 }
 
+pub const LR: Register = Register(14);
+pub const PC: Register = Register(15);
+
 impl Cpu {
     pub fn new(memory: MemoryMap) -> Cpu {
         Cpu {
@@ -33,16 +36,8 @@ impl Cpu {
         }
     }
 
-    pub fn pc(&self) -> u32 {
-        self.regs[Register(15)]
-    }
-
-    pub fn set_pc(&mut self, value: u32) {
-        self.regs[Register(15)] = value;
-    }
-
     pub fn tick(&mut self) {
-        let address = self.pc();
+        let address = self.regs[PC];
         let instruction = if self.cpsr.t() {
             let bits = self.memory.read_halfword(address);
             decode_thumb(bits)
@@ -53,9 +48,9 @@ impl Cpu {
 
         execute(self, instruction);
 
-        if address == self.pc() {
+        if address == self.regs[PC] {
             let inc = if self.cpsr.t() { 2 } else { 4 };
-            self.set_pc(address + inc);
+            self.regs[PC] = address + inc;
         }
     }
 }
