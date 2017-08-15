@@ -13,8 +13,10 @@ mod memory_map;
 
 use cpu::Cpu;
 use memory_map::MemoryMap;
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::*;
+use std::rc::Rc;
 
 fn main() {
     let bios = BufReader::new(File::open("./misc/bios-dump.bin").unwrap());

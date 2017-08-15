@@ -1,6 +1,7 @@
 use cpu::Register;
 use std::fmt;
 
+#[derive(Copy, Clone)]
 pub enum Instruction {
     // Branch
     B { condition: Condition, l: bool, signed_immed: u32 },
@@ -152,7 +153,7 @@ pub enum Condition {
     Nv, // Never
 }
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum AddressMode1 {
     Immediate {
         value: u8,
@@ -165,7 +166,7 @@ pub enum AddressMode1 {
     },
 }
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum ShiftDirection {
     Asr, // Arithmetic shift right
     Lsl, // Logical shift left
@@ -174,7 +175,7 @@ pub enum ShiftDirection {
     Rrx, // Rotate right with extend
 }
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum AddressingOffset {
     Immediate(u16),
     Register(Register),
@@ -185,7 +186,7 @@ pub enum AddressingOffset {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct AddressMode2 {
     pub rn: Register,
     pub offset: AddressingOffset,
@@ -193,7 +194,7 @@ pub struct AddressMode2 {
     pub u: bool,
 }
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct AddressMode3 {
     pub rn: Register,
     pub offset: AddressingOffset,
@@ -201,7 +202,7 @@ pub struct AddressMode3 {
     pub u: bool,
 }
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum AddressingMode {
     Offset,
     PreIndexed,

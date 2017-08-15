@@ -27,9 +27,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
                 cpu.regs[LR] = pc_val + 4;
             }
 
-            let sign_extended = (((signed_immed as i32) << 8) >> 8) as u32;
-            let target = (sign_extended << 2) + 8;
-            cpu.regs[PC] += target;
+            cpu.regs[PC] += sign_extend(signed_immed, 24) << 2;
         },
 
         Instruction::Bx { rm, .. } => {
@@ -645,4 +643,9 @@ fn overflow_from_add(operand1: u32, operand2: u32, result: u32) -> bool {
 
 fn overflow_from_sub(operand1: u32, operand2: u32, result: u32) -> bool {
     operand1.bit(31) != operand2.bit(31) && result.bit(31) != operand1.bit(31)
+}
+
+fn sign_extend(operand: u32, size: u8) -> u32 {
+    let shift = 32 - size;
+    (((operand as i32) << shift) >> shift) as u32
 }

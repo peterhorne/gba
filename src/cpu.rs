@@ -3,8 +3,11 @@ use bus::{Read, Write};
 use core::ops::Range;
 use decode::{decode_arm, decode_thumb};
 use execute::execute;
+use instruction::Instruction;
 use memory_map::MemoryMap;
+use std::cell::RefCell;
 use std::ops::{Index, IndexMut};
+use std::rc::Rc;
 
 pub struct Cpu {
     // r0-7:  Unbanked registers
@@ -21,6 +24,7 @@ pub struct Cpu {
     pub spsr: ProgramStatusRegister,
 
     pub memory: MemoryMap,
+    pipeline: InstructionPipeline,
 }
 
 pub const LR: Register = Register(14);
@@ -33,26 +37,86 @@ impl Cpu {
             cpsr: ProgramStatusRegister::new(),
             spsr: ProgramStatusRegister::new(),
             memory: memory,
+            pipeline: InstructionPipeline::empty(),
         }
     }
 
     pub fn tick(&mut self) {
         let address = self.regs[PC];
-        let instruction = if self.cpsr.t() {
-            let bits = self.memory.read_halfword(address);
-            decode_thumb(bits)
+
+        let fetch = self.fetch();
+        let decode = self.decode();
+        let execute = self.execute();
+
+        if self.regs[PC] == address {
+            self.pipeline = InstructionPipeline::new(fetch, decode, execute);
+            self.incr_pc();
         } else {
-            let bits = self.memory.read_word(address);
-            decode_arm(bits)
-        };
-
-        execute(self, instruction);
-
-        if address == self.regs[PC] {
-            let inc = if self.cpsr.t() { 2 } else { 4 };
-            self.regs[PC] = address + inc;
+            // A branch has occurred so flush the pipeline
+            self.pipeline = InstructionPipeline::new(None, None, execute);
         }
     }
+
+    fn fetch(&self) -> Option<EncodedInstruction> {
+        let address = self.regs[PC];
+
+        let bits = if self.cpsr.t() {
+            EncodedInstruction::Thumb(self.memory.read_halfword(address))
+        } else {
+            EncodedInstruction::Arm(self.memory.read_word(address))
+        };
+
+        Some(bits)
+    }
+
+    fn decode(&mut self) -> Option<Instruction> {
+        self.pipeline.fetch.map(|bits| {
+            match bits {
+                EncodedInstruction::Thumb(bits) => decode_thumb(bits),
+                EncodedInstruction::Arm(bits) => decode_arm(bits),
+            }
+        })
+    }
+
+    fn execute(&mut self) -> Option<Instruction> {
+        self.pipeline.decode.map(|inst| {
+            execute(self, inst.clone());
+            inst
+        })
+    }
+
+    fn incr_pc(&mut self) {
+        let incr = if self.cpsr.t() { 2 } else { 4 };
+        self.regs[PC] += incr;
+    }
+}
+
+pub struct InstructionPipeline {
+    fetch: Option<EncodedInstruction>,
+    decode: Option<Instruction>,
+    execute: Option<Instruction>,
+}
+
+impl InstructionPipeline {
+    fn new(fetch: Option<EncodedInstruction>,
+           decode: Option<Instruction>,
+           execute: Option<Instruction>) -> InstructionPipeline {
+        InstructionPipeline { fetch, decode, execute }
+    }
+
+    fn empty() -> InstructionPipeline {
+        InstructionPipeline {
+            fetch: None,
+            decode: None,
+            execute: None
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum EncodedInstruction {
+    Arm(u32),
+    Thumb(u16),
 }
 
 #[derive(Clone, Copy)]
@@ -93,10 +157,6 @@ impl ProgramStatusRegister {
 
     // Flags
 
-    pub fn t(&self) -> bool {
-        self.0.bit(5)
-    }
-
     pub fn n(&self) -> bool {
         self.0.bit(31)
     }
@@ -113,8 +173,12 @@ impl ProgramStatusRegister {
         self.0.bit(28)
     }
 
-    pub fn set_t(&mut self, value: bool) {
-        self.0.set_bit(5, value);
+    pub fn i(&self) -> bool {
+        self.0.bit(7)
+    }
+
+    pub fn t(&self) -> bool {
+        self.0.bit(5)
     }
 
     pub fn set_n(&mut self, value: bool) {
@@ -131,6 +195,14 @@ impl ProgramStatusRegister {
 
     pub fn set_v(&mut self, value: bool) {
         self.0.set_bit(28, value);
+    }
+
+    pub fn set_i(&mut self, value: bool) {
+        self.0.set_bit(7, value);
+    }
+
+    pub fn set_t(&mut self, value: bool) {
+        self.0.set_bit(5, value);
     }
 
     pub fn set_bits(&mut self, range: Range<u8>, value: u32) {
