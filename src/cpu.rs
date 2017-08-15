@@ -4,6 +4,7 @@ use core::ops::Range;
 use decode::{decode_arm, decode_thumb};
 use execute::execute;
 use instruction::Instruction;
+use irq_input::IrqInput;
 use memory_map::MemoryMap;
 use std::cell::RefCell;
 use std::ops::{Index, IndexMut};
@@ -24,6 +25,7 @@ pub struct Cpu {
     pub spsr: ProgramStatusRegister,
 
     pub memory: MemoryMap,
+    irq_input: Rc<RefCell<IrqInput>>,
     pipeline: InstructionPipeline,
 }
 
@@ -31,12 +33,14 @@ pub const LR: Register = Register(14);
 pub const PC: Register = Register(15);
 
 impl Cpu {
-    pub fn new(memory: MemoryMap) -> Cpu {
+    pub fn new(memory: MemoryMap,
+               irq_input: Rc<RefCell<IrqInput>>) -> Cpu {
         Cpu {
             regs: Registers::new(),
             cpsr: ProgramStatusRegister::new(),
             spsr: ProgramStatusRegister::new(),
             memory: memory,
+            irq_input: irq_input,
             pipeline: InstructionPipeline::empty(),
         }
     }
@@ -54,6 +58,10 @@ impl Cpu {
         } else {
             // A branch has occurred so flush the pipeline
             self.pipeline = InstructionPipeline::new(None, None, execute);
+        }
+
+        if self.irq_input.borrow().is_asserted() {
+            self.handle_interrupt()
         }
     }
 
@@ -88,6 +96,17 @@ impl Cpu {
     fn incr_pc(&mut self) {
         let incr = if self.cpsr.t() { 2 } else { 4 };
         self.regs[PC] += incr;
+    }
+
+    fn handle_interrupt(&mut self) {
+        self.irq_input.borrow_mut().reset();
+        // R14_irq = address of next instruction to be executed + 4
+        // SPSR_irq = CPSR
+        // CPSR[4:0] = 0b10010
+        // CPSR[5] = 0
+        // /* CPSR[6] is unchanged */
+        // CPSR[7] = 1
+        // PC    = 0x00000018
     }
 }
 
