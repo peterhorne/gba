@@ -1,11 +1,29 @@
 use bus;
-use bit::SetBit;
+use bit::{Bit, SetBit};
 
 pub struct InterruptController {
     enabled: bool,
     asserted: bool,
-    lines_enabled: u16,
-    lines_asserted: u16,
+    mask: u16,
+    flags: u16,
+}
+
+#[derive(Clone)]
+pub enum Input {
+    VBlank = 0,
+    HBlank = 1,
+    VCounter = 2,
+    Timer0 = 3,
+    Timer1 = 4,
+    Timer2 = 5,
+    Timer3 = 6,
+    Serial = 7,
+    Dma0 = 8,
+    Dma1 = 9,
+    Dma2 = 10,
+    Dma3 = 11,
+    Key = 12,
+    GamePak = 13,
 }
 
 impl InterruptController {
@@ -13,8 +31,8 @@ impl InterruptController {
         InterruptController {
             enabled: false,
             asserted: false,
-            lines_enabled: 0,
-            lines_asserted: 0,
+            mask: 0,
+            flags: 0,
         }
     }
 
@@ -22,9 +40,11 @@ impl InterruptController {
         self.asserted
     }
 
-    pub fn assert(&mut self, line: u8) {
-        self.asserted = true;
-        self.lines_asserted.set_bit(line, true);
+    pub fn assert(&mut self, input: Input) {
+        if self.mask.bit(input.clone() as u8) {
+            self.asserted = true;
+            self.flags.set_bit(input as u8, true);
+        }
     }
 
     pub fn reset(&mut self) {
@@ -39,8 +59,8 @@ impl bus::Read for InterruptController {
 
     fn read_halfword(&self, address: u32) -> u16 {
         match address {
-            0x200 => self.lines_enabled,
-            0x202 => self.lines_asserted,
+            0x200 => self.mask,
+            0x202 => self.flags,
             0x208 => self.enabled as u16,
             _ => unreachable!(),
         }
@@ -58,8 +78,8 @@ impl bus::Write for InterruptController {
 
     fn write_halfword(&mut self, address: u32, value: u16) {
         match address {
-            0x200 => self.lines_enabled = value,
-            0x202 => self.lines_asserted = value,
+            0x200 => self.mask = value & 0x3fff,
+            0x202 => self.flags ^= self.flags & value & 0x3fff,
             0x208 => {
                 if value == 0 {
                     self.enabled = false;
