@@ -1,18 +1,26 @@
 use bus;
+use interrupt_controller::InterruptController;
 use std::cell::RefCell;
 use std::fs::File;
 use std::io::*;
+use std::rc::Rc;
 
 pub struct MemoryMap {
     bios: RefCell<BufReader<File>>,
     rom: RefCell<BufReader<File>>,
+    irc: Rc<RefCell<InterruptController>>,
 }
 
 impl MemoryMap {
-    pub fn new(bios: BufReader<File>, rom: BufReader<File>) -> MemoryMap {
+    pub fn new(
+        bios: BufReader<File>,
+        rom: BufReader<File>,
+        irc: Rc<RefCell<InterruptController>>
+    ) -> MemoryMap {
         MemoryMap {
             bios: RefCell::new(bios),
             rom: RefCell::new(rom),
+            irc: irc,
         }
     }
 
@@ -31,7 +39,8 @@ impl MemoryMap {
             0x04000120...0x0400012C => panic!("Serial Communication (1)"),
             0x04000130...0x04000132 => panic!("Keypad Input"),
             0x04000134...0x0400015A => panic!("Serial Communication (2)"),
-            0x04000200...0x040003FE => panic!("Interrupt, Waitstate, and Power-Down Control"),
+            0x04000200...0x04000209 => read(&*self.irc, offset),
+            0x04000210...0x040003FE => panic!("Interrupt, Waitstate, and Power-Down Control"),
             // Internal Display Memory
             0x05000000...0x050003FF => panic!("BG/OBJ Palette RAM"),
             0x06000000...0x06017FFF => panic!("VRAM - Video RAM"),

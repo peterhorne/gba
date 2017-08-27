@@ -1,5 +1,7 @@
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::cell::RefCell;
+use std::fs::File;
+use std::io::*;
 use std::io;
 
 pub trait Read {
@@ -14,7 +16,21 @@ pub trait Write {
     fn write_word(&mut self, address: u32, value: u32);
 }
 
-impl<T: io::Read + io::Seek> Read for RefCell<T> {
+impl<T: Read> Read for RefCell<T> {
+    fn read_byte(&self, address: u32) -> u8 {
+        self.borrow().read_byte(address)
+    }
+
+    fn read_halfword(&self, address: u32) -> u16 {
+        self.borrow().read_halfword(address)
+    }
+
+    fn read_word(&self, address: u32) -> u32 {
+        self.borrow().read_word(address)
+    }
+}
+
+impl Read for RefCell<BufReader<File>> {
     fn read_byte(&self, address: u32) -> u8 {
         let mut inner = self.borrow_mut();
         inner.seek(io::SeekFrom::Start(address as u64)).unwrap();

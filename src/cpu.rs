@@ -4,7 +4,7 @@ use core::ops::Range;
 use decode::{decode_arm, decode_thumb};
 use execute::execute;
 use instruction::Instruction;
-use irq_input::IrqInput;
+use interrupt_controller::InterruptController;
 use memory_map::MemoryMap;
 use std::cell::RefCell;
 use std::ops::{Index, IndexMut};
@@ -25,7 +25,7 @@ pub struct Cpu {
     pub spsr: ProgramStatusRegister,
 
     pub memory: MemoryMap,
-    irq_input: Rc<RefCell<IrqInput>>,
+    irc: Rc<RefCell<InterruptController>>,
     pipeline: InstructionPipeline,
 }
 
@@ -33,14 +33,16 @@ pub const LR: Register = Register(14);
 pub const PC: Register = Register(15);
 
 impl Cpu {
-    pub fn new(memory: MemoryMap,
-               irq_input: Rc<RefCell<IrqInput>>) -> Cpu {
+    pub fn new(
+        memory: MemoryMap,
+        irc: Rc<RefCell<InterruptController>>
+    ) -> Cpu {
         Cpu {
             regs: Registers::new(),
             cpsr: ProgramStatusRegister::new(),
             spsr: ProgramStatusRegister::new(),
             memory: memory,
-            irq_input: irq_input,
+            irc: irc,
             pipeline: InstructionPipeline::empty(),
         }
     }
@@ -52,15 +54,14 @@ impl Cpu {
         let decode = self.decode();
         let execute = self.execute();
 
-        if self.regs[PC] == address {
+        if self.regs[PC] != address { // Has a branch occurred?
+            self.pipeline = InstructionPipeline::new(None, None, execute);
+        } else {
             self.pipeline = InstructionPipeline::new(fetch, decode, execute);
             self.incr_pc();
-        } else {
-            // A branch has occurred so flush the pipeline
-            self.pipeline = InstructionPipeline::new(None, None, execute);
         }
 
-        if self.irq_input.borrow().is_asserted() {
+        if self.irc.borrow().is_asserted() {
             self.handle_interrupt()
         }
     }
@@ -99,7 +100,7 @@ impl Cpu {
     }
 
     fn handle_interrupt(&mut self) {
-        self.irq_input.borrow_mut().reset();
+        self.irc.borrow_mut().reset();
         // R14_irq = address of next instruction to be executed + 4
         // SPSR_irq = CPSR
         // CPSR[4:0] = 0b10010
