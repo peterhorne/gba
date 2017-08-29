@@ -9,6 +9,9 @@ pub struct MemoryMap {
     bios: RefCell<BufReader<File>>,
     rom: RefCell<BufReader<File>>,
     irc: Rc<RefCell<InterruptController>>,
+    postflg: [u8; 1],
+    haltcnt: [u8; 1],
+    memcnt: [u8; 4],
 }
 
 impl MemoryMap {
@@ -21,6 +24,9 @@ impl MemoryMap {
             bios: RefCell::new(bios),
             rom: RefCell::new(rom),
             irc: irc,
+            postflg: [0; 1],
+            haltcnt: [0; 1],
+            memcnt: [0; 4],
         }
     }
 
@@ -28,28 +34,30 @@ impl MemoryMap {
         let offset = address & 0xFFFFFF;
         match address {
             // General Internal Memory
-            0x00000000...0x00003FFF => read(&self.bios, offset),
-            0x02000000...0x0203FFFF => panic!("WRAM - On-board Work RAM"),
-            0x03000000...0x03007FFF => panic!("WRAM - On-chip Work RAM"),
+            0x0000000...0x0003FFF => read(&self.bios, offset),
+            0x2000000...0x203FFFF => panic!("WRAM - On-board Work RAM"),
+            0x3000000...0x3007FFF => panic!("WRAM - On-chip Work RAM"),
             // I/O Map
-            0x04000000...0x04000056 => panic!("LCD I/O Registers"),
-            0x04000060...0x040000A8 => panic!("Sound Registers"),
-            0x040000B0...0x040000E0 => panic!("DMA Transfer Channels"),
-            0x04000100...0x04000110 => panic!("Timer Registers"),
-            0x04000120...0x0400012C => panic!("Serial Communication (1)"),
-            0x04000130...0x04000132 => panic!("Keypad Input"),
-            0x04000134...0x0400015A => panic!("Serial Communication (2)"),
-            0x04000200...0x04000209 => read(&*self.irc, offset),
-            0x04000210...0x040003FE => panic!("Interrupt, Waitstate, and Power-Down Control"),
+            0x4000000...0x4000056 => panic!("LCD I/O Registers"),
+            0x4000060...0x40000A8 => panic!("Sound Registers"),
+            0x40000B0...0x40000E0 => panic!("DMA Transfer Channels"),
+            0x4000100...0x4000110 => panic!("Timer Registers"),
+            0x4000120...0x400012C => panic!("Serial Communication (1)"),
+            0x4000130...0x4000132 => panic!("Keypad Input"),
+            0x4000134...0x400015A => panic!("Serial Communication (2)"),
+            0x4000200...0x4000209 => read(&*self.irc, offset),
+            0x4000300...0x4000300 => read(&self.postflg, 0),
+            0x4000301...0x4000301 => read(&self.haltcnt, 0),
+            0x4000800...0x4000803 => read(&self.memcnt, address & 0x4000800),
             // Internal Display Memory
-            0x05000000...0x050003FF => panic!("BG/OBJ Palette RAM"),
-            0x06000000...0x06017FFF => panic!("VRAM - Video RAM"),
-            0x07000000...0x070003FF => panic!("OAM - OBJ Attributes"),
+            0x5000000...0x50003FF => panic!("BG/OBJ Palette RAM"),
+            0x6000000...0x6017FFF => panic!("VRAM - Video RAM"),
+            0x7000000...0x70003FF => panic!("OAM - OBJ Attributes"),
             // External Memory (Game Pak)
-            0x07ffffff...0x09FFFFFF => read(&self.rom, offset),
-            0x0A000000...0x0BFFFFFF => read(&self.rom, offset),
-            0x0C000000...0x0DFFFFFF => read(&self.rom, offset),
-            0x0E000000...0x0E00FFFF => panic!("Game Pak SRAM"),
+            0x7ffffff...0x9FFFFFF => read(&self.rom, offset),
+            0xA000000...0xBFFFFFF => read(&self.rom, offset),
+            0xC000000...0xDFFFFFF => read(&self.rom, offset),
+            0xE000000...0xE00FFFF => panic!("Game Pak SRAM"),
             _ => panic!("Memory address {:#x} is unreadable", address),
         }
     }
@@ -58,23 +66,26 @@ impl MemoryMap {
         let offset = address & 0xFFFFFF;
         match address {
             // General Internal Memory
-            0x02000000...0x0203FFFF => panic!("WRAM - On-board Work RAM"),
-            0x03000000...0x03007FFF => panic!("WRAM - On-chip Work RAM"),
+            0x2000000...0x203FFFF => panic!("WRAM - On-board Work RAM"),
+            0x3000000...0x3007FFF => panic!("WRAM - On-chip Work RAM"),
             // I/O Map
-            0x04000000...0x04000056 => panic!("LCD I/O Registers"),
-            0x04000060...0x040000A8 => panic!("Sound Registers"),
-            0x040000B0...0x040000E0 => panic!("DMA Transfer Channels"),
-            0x04000100...0x04000110 => panic!("Timer Registers"),
-            0x04000120...0x0400012C => panic!("Serial Communication (1)"),
-            0x04000130...0x04000132 => panic!("Keypad Input"),
-            0x04000134...0x0400015A => panic!("Serial Communication (2)"),
-            0x04000200...0x040003FE => panic!("Interrupt, Waitstate, and Power-Down Control"),
+            0x4000000...0x4000056 => panic!("LCD I/O Registers"),
+            0x4000060...0x40000A8 => panic!("Sound Registers"),
+            0x40000B0...0x40000E0 => panic!("DMA Transfer Channels"),
+            0x4000100...0x4000110 => panic!("Timer Registers"),
+            0x4000120...0x400012C => panic!("Serial Communication (1)"),
+            0x4000130...0x4000132 => panic!("Keypad Input"),
+            0x4000134...0x400015A => panic!("Serial Communication (2)"),
+            0x4000200...0x4000209 => write(&*self.irc, offset, value),
+            0x4000300...0x4000300 => write(self.postflg, 0, value),
+            0x4000301...0x4000301 => write(&self.haltcnt, 0, value),
+            0x4000800...0x4000803 => write(&self.memcnt, address & 0x4000800, value),
             // Internal Display Memory
-            0x05000000...0x050003FF => panic!("BG/OBJ Palette RAM"),
-            0x06000000...0x06017FFF => panic!("VRAM - Video RAM"),
-            0x07000000...0x070003FF => panic!("OAM - OBJ Attributes"),
+            0x5000000...0x50003FF => panic!("BG/OBJ Palette RAM"),
+            0x6000000...0x6017FFF => panic!("VRAM - Video RAM"),
+            0x7000000...0x70003FF => panic!("OAM - OBJ Attributes"),
             // External Memory (Game Pak)
-            0x0E000000...0x0E00FFFF => panic!("Game Pak SRAM"),
+            0xE000000...0xE00FFFF => panic!("Game Pak SRAM"),
             _ => panic!("Memory address {:#x} is unwritable", address),
         }
     }
