@@ -80,15 +80,9 @@ impl bus::Write for InterruptController {
         match address {
             0x200 => self.mask = value & 0x3fff,
             0x202 => self.flags ^= self.flags & value & 0x3fff,
-            0x208 => {
-                if value == 0 {
-                    self.enabled = false;
-                } else if value == 1 {
-                    self.enabled = true;
-                } else {
-                    panic!("Attempted to write non-boolean value to IME");
-                }
-            },
+            0x208 if value == 0 => self.enabled = false,
+            0x208 if value == 1 => self.enabled = true,
+            0x208 => panic!("Attempted to write non-boolean value to IME"),
             _ => unreachable!(),
         }
     }

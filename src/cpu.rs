@@ -25,7 +25,7 @@ pub struct Cpu {
     pub spsr: ProgramStatusRegister,
 
     pub memory: MemoryMap,
-    irc: Rc<RefCell<InterruptController>>,
+    interrupts: Rc<RefCell<InterruptController>>,
     pipeline: InstructionPipeline,
 }
 
@@ -35,14 +35,14 @@ pub const PC: Register = Register(15);
 impl Cpu {
     pub fn new(
         memory: MemoryMap,
-        irc: Rc<RefCell<InterruptController>>
+        interrupts: Rc<RefCell<InterruptController>>
     ) -> Cpu {
         Cpu {
             regs: Registers::new(),
             cpsr: ProgramStatusRegister::new(),
             spsr: ProgramStatusRegister::new(),
             memory: memory,
-            irc: irc,
+            interrupts: interrupts,
             pipeline: InstructionPipeline::empty(),
         }
     }
@@ -61,7 +61,7 @@ impl Cpu {
             self.incr_pc();
         }
 
-        if self.irc.borrow().is_asserted() {
+        if self.interrupts.borrow().is_asserted() {
             self.handle_interrupt()
         }
     }
@@ -100,7 +100,7 @@ impl Cpu {
     }
 
     fn handle_interrupt(&mut self) {
-        self.irc.borrow_mut().reset();
+        self.interrupts.borrow_mut().reset();
         // R14_irq = address of next instruction to be executed + 4
         // SPSR_irq = CPSR
         // CPSR[4:0] = 0b10010

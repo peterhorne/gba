@@ -21,10 +21,10 @@ use std::io::*;
 use std::rc::Rc;
 
 fn main() {
-    let irc = Rc::new(RefCell::new(InterruptController::new()));
+    let interrupts = Rc::new(RefCell::new(InterruptController::new()));
     let bios = BufReader::new(File::open("./misc/bios-dump.bin").unwrap());
     let rom = BufReader::new(File::open("./misc/super-mario.gba").unwrap());
-    let memory = MemoryMap::new(bios, rom, Rc::clone(&irc));
-    let mut cpu = Cpu::new(memory, Rc::clone(&irc));
+    let memory = MemoryMap::new(bios, rom, Rc::clone(&interrupts));
+    let mut cpu = Cpu::new(memory, Rc::clone(&interrupts));
     loop { cpu.tick(); }
 }
