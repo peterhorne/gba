@@ -1,5 +1,5 @@
 use bus;
-use bit::{Bit, SetBit};
+use bit::{Bit, Bits, SetBit};
 
 pub struct InterruptController {
     enabled: bool,
@@ -53,8 +53,15 @@ impl InterruptController {
 }
 
 impl bus::Read for InterruptController {
-    fn read_byte(&self, _address: u32) -> u8 {
-        unimplemented!();
+    fn read_byte(&self, address: u32) -> u8 {
+        match address {
+            0x200 => self.mask as u8,
+            0x201 => self.mask.bits(8..16) as u8,
+            0x202 => self.flags as u8,
+            0x203 => self.flags.bits(8..16) as u8,
+            0x208 => self.enabled as u8,
+            _ => unreachable!(),
+        }
     }
 
     fn read_halfword(&self, address: u32) -> u16 {
