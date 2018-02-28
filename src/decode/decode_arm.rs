@@ -1,100 +1,102 @@
 use bit::{Bit, Bits};
 use cpu::Register;
-use instruction::{
-    AddressMode1,
-    AddressMode2,
-    AddressMode3,
-    Condition,
-    Instruction,
-    AddressingOffset,
-    AddressingMode,
-    ShiftDirection,
-};
+use instruction::{AddressMode1, AddressMode2, AddressMode3, AddressingMode,
+                  AddressingOffset, Condition, Instruction, ShiftDirection};
 
 pub fn decode_arm(inst: u32) -> Instruction {
     let bits = (
-        inst.bit(27) as u8, inst.bit(26) as u8, inst.bit(25) as u8,
-        inst.bit(24) as u8, inst.bit(23) as u8, inst.bit(22) as u8,
-        inst.bit(21) as u8, inst.bit(20) as u8, inst.bit(7) as u8,
-        inst.bit(6) as u8, inst.bit(5) as u8, inst.bit(4) as u8,
+        inst.bit(27) as u8,
+        inst.bit(26) as u8,
+        inst.bit(25) as u8,
+        inst.bit(24) as u8,
+        inst.bit(23) as u8,
+        inst.bit(22) as u8,
+        inst.bit(21) as u8,
+        inst.bit(20) as u8,
+        inst.bit(7) as u8,
+        inst.bit(6) as u8,
+        inst.bit(5) as u8,
+        inst.bit(4) as u8,
     );
 
     match bits {
-        (0,0,0,0,0,0,0,_, 1,0,0,1) => { mul(inst) },
-        (0,0,0,0,0,0,1,_, 1,0,0,1) => { mla(inst) },
-        (0,0,0,0,1,0,0,_, 1,0,0,1) => { umull(inst) },
-        (0,0,0,0,1,0,1,_, 1,0,0,1) => { umlal(inst) },
-        (0,0,0,0,1,1,0,_, 1,0,0,1) => { smull(inst) },
-        (0,0,0,0,1,1,1,_, 1,0,0,1) => { smlal(inst) },
-        (0,0,0,1,0,_,0,0, 0,0,0,0) => { mrs(inst) },
-        (0,0,1,1,0,_,1,0, _,_,_,_) => { msr(inst) },
-        (0,0,0,1,0,_,1,0, 0,0,0,0) => { msr(inst) },
-        (0,0,0,1,0,0,1,0, 0,0,0,1) => { bx(inst) },
-        (0,0,0,1,0,0,0,0, 1,0,0,1) => { swp(inst) },
-        (0,0,0,1,0,1,0,0, 1,0,0,1) => { swpb(inst) },
-        (0,0,0,_,_,_,_,1, 1,0,1,1) => { ldrh(inst) },
-        (0,0,0,_,_,_,_,0, 1,0,1,1) => { strh(inst) },
-        (0,0,0,_,_,_,_,1, 1,1,0,1) => { ldrsb(inst) },
-        (0,0,0,_,_,_,_,1, 1,1,1,1) => { ldrsh(inst) },
-        (0,0,_,0,0,0,0,_, _,_,_,_) => { and(inst) },
-        (0,0,_,0,0,0,1,_, _,_,_,_) => { eor(inst) },
-        (0,0,_,0,0,1,0,_, _,_,_,_) => { sub(inst) },
-        (0,0,_,0,0,1,1,_, _,_,_,_) => { rsb(inst) },
-        (0,0,_,0,1,0,0,_, _,_,_,_) => { add(inst) },
-        (0,0,_,0,1,0,1,_, _,_,_,_) => { adc(inst) },
-        (0,0,_,0,1,1,0,_, _,_,_,_) => { sbc(inst) },
-        (0,0,_,0,1,1,1,_, _,_,_,_) => { rsc(inst) },
-        (0,0,_,1,1,0,0,_, _,_,_,_) => { orr(inst) },
-        (0,0,_,1,1,0,1,_, _,_,_,_) => { mov(inst) },
-        (0,0,_,1,1,1,0,_, _,_,_,_) => { bic(inst) },
-        (0,0,_,1,1,1,1,_, _,_,_,_) => { mvn(inst) },
-        (0,0,_,1,0,0,0,1, _,_,_,_) => { tst(inst) },
-        (0,0,_,1,0,0,1,1, _,_,_,_) => { teq(inst) },
-        (0,0,_,1,0,1,0,1, _,_,_,_) => { cmp(inst) },
-        (0,0,_,1,0,1,1,1, _,_,_,_) => { cmn(inst) },
-        (0,1,_,_,_,0,_,1, _,_,_,_) => { ldr(inst) },
-        (0,1,_,_,_,1,_,1, _,_,_,_) => { ldrb(inst) },
-        (0,1,_,_,_,0,_,0, _,_,_,_) => { str(inst) },
-        (0,1,_,_,_,1,_,0, _,_,_,_) => { strb(inst) },
-        (0,1,_,0,_,1,1,1, _,_,_,_) => { ldrbt(inst) },
-        (0,1,_,0,_,0,1,1, _,_,_,_) => { ldrt(inst) },
-        (0,1,_,0,_,1,1,0, _,_,_,_) => { strbt(inst) },
-        (0,1,_,0,_,0,1,0, _,_,_,_) => { strt(inst) },
-        (1,0,0,_,_,0,_,1, _,_,_,_) => { ldm1(inst) },
-        (1,0,0,_,_,1,_,1, _,_,_,_) => { ldm3(inst) },
-        (1,0,0,_,_,0,_,0, _,_,_,_) => { stm1(inst) },
-        (1,0,0,_,_,1,0,1, _,_,_,_) => { ldm2(inst) },
-        (1,0,0,_,_,1,0,0, _,_,_,_) => { stm2(inst) },
-        (1,0,1,_,_,_,_,_, _,_,_,_) => { b(inst) },
-        (1,1,0,_,_,_,_,1, _,_,_,_) => { ldc(inst) },
-        (1,1,0,_,_,_,_,0, _,_,_,_) => { stc(inst) },
-        (1,1,1,0,_,_,_,1, _,_,_,0) => { cdp(inst) },
-        (1,1,1,0,_,_,_,0, _,_,_,1) => { mcr(inst) },
-        (1,1,1,0,_,_,_,1, _,_,_,1) => { mrc(inst) },
-        (1,1,1,1,_,_,_,_, _,_,_,_) => { swi(inst) },
-        _ => { panic!("Unrecognised instruction: {:x}", inst); },
+        (0, 0, 0, 0, 0, 0, 0, _, 1, 0, 0, 1) => mul(inst),
+        (0, 0, 0, 0, 0, 0, 1, _, 1, 0, 0, 1) => mla(inst),
+        (0, 0, 0, 0, 1, 0, 0, _, 1, 0, 0, 1) => umull(inst),
+        (0, 0, 0, 0, 1, 0, 1, _, 1, 0, 0, 1) => umlal(inst),
+        (0, 0, 0, 0, 1, 1, 0, _, 1, 0, 0, 1) => smull(inst),
+        (0, 0, 0, 0, 1, 1, 1, _, 1, 0, 0, 1) => smlal(inst),
+        (0, 0, 0, 1, 0, _, 0, 0, 0, 0, 0, 0) => mrs(inst),
+        (0, 0, 1, 1, 0, _, 1, 0, _, _, _, _) => msr(inst),
+        (0, 0, 0, 1, 0, _, 1, 0, 0, 0, 0, 0) => msr(inst),
+        (0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1) => bx(inst),
+        (0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1) => swp(inst),
+        (0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1) => swpb(inst),
+        (0, 0, 0, _, _, _, _, 1, 1, 0, 1, 1) => ldrh(inst),
+        (0, 0, 0, _, _, _, _, 0, 1, 0, 1, 1) => strh(inst),
+        (0, 0, 0, _, _, _, _, 1, 1, 1, 0, 1) => ldrsb(inst),
+        (0, 0, 0, _, _, _, _, 1, 1, 1, 1, 1) => ldrsh(inst),
+        (0, 0, _, 0, 0, 0, 0, _, _, _, _, _) => and(inst),
+        (0, 0, _, 0, 0, 0, 1, _, _, _, _, _) => eor(inst),
+        (0, 0, _, 0, 0, 1, 0, _, _, _, _, _) => sub(inst),
+        (0, 0, _, 0, 0, 1, 1, _, _, _, _, _) => rsb(inst),
+        (0, 0, _, 0, 1, 0, 0, _, _, _, _, _) => add(inst),
+        (0, 0, _, 0, 1, 0, 1, _, _, _, _, _) => adc(inst),
+        (0, 0, _, 0, 1, 1, 0, _, _, _, _, _) => sbc(inst),
+        (0, 0, _, 0, 1, 1, 1, _, _, _, _, _) => rsc(inst),
+        (0, 0, _, 1, 1, 0, 0, _, _, _, _, _) => orr(inst),
+        (0, 0, _, 1, 1, 0, 1, _, _, _, _, _) => mov(inst),
+        (0, 0, _, 1, 1, 1, 0, _, _, _, _, _) => bic(inst),
+        (0, 0, _, 1, 1, 1, 1, _, _, _, _, _) => mvn(inst),
+        (0, 0, _, 1, 0, 0, 0, 1, _, _, _, _) => tst(inst),
+        (0, 0, _, 1, 0, 0, 1, 1, _, _, _, _) => teq(inst),
+        (0, 0, _, 1, 0, 1, 0, 1, _, _, _, _) => cmp(inst),
+        (0, 0, _, 1, 0, 1, 1, 1, _, _, _, _) => cmn(inst),
+        (0, 1, _, _, _, 0, _, 1, _, _, _, _) => ldr(inst),
+        (0, 1, _, _, _, 1, _, 1, _, _, _, _) => ldrb(inst),
+        (0, 1, _, _, _, 0, _, 0, _, _, _, _) => str(inst),
+        (0, 1, _, _, _, 1, _, 0, _, _, _, _) => strb(inst),
+        (0, 1, _, 0, _, 1, 1, 1, _, _, _, _) => ldrbt(inst),
+        (0, 1, _, 0, _, 0, 1, 1, _, _, _, _) => ldrt(inst),
+        (0, 1, _, 0, _, 1, 1, 0, _, _, _, _) => strbt(inst),
+        (0, 1, _, 0, _, 0, 1, 0, _, _, _, _) => strt(inst),
+        (1, 0, 0, _, _, 0, _, 1, _, _, _, _) => ldm1(inst),
+        (1, 0, 0, _, _, 1, _, 1, _, _, _, _) => ldm3(inst),
+        (1, 0, 0, _, _, 0, _, 0, _, _, _, _) => stm1(inst),
+        (1, 0, 0, _, _, 1, 0, 1, _, _, _, _) => ldm2(inst),
+        (1, 0, 0, _, _, 1, 0, 0, _, _, _, _) => stm2(inst),
+        (1, 0, 1, _, _, _, _, _, _, _, _, _) => b(inst),
+        (1, 1, 0, _, _, _, _, 1, _, _, _, _) => ldc(inst),
+        (1, 1, 0, _, _, _, _, 0, _, _, _, _) => stc(inst),
+        (1, 1, 1, 0, _, _, _, 1, _, _, _, 0) => cdp(inst),
+        (1, 1, 1, 0, _, _, _, 0, _, _, _, 1) => mcr(inst),
+        (1, 1, 1, 0, _, _, _, 1, _, _, _, 1) => mrc(inst),
+        (1, 1, 1, 1, _, _, _, _, _, _, _, _) => swi(inst),
+        _ => {
+            panic!("Unrecognised instruction: {:x}", inst);
+        }
     }
 }
 
 fn condition(inst: u32) -> Condition {
     match inst.bits(28..32) {
-        0b0000 => { Condition::Eq },
-        0b0001 => { Condition::Ne },
-        0b0010 => { Condition::Cs },
-        0b0011 => { Condition::Cc },
-        0b0100 => { Condition::Mi },
-        0b0101 => { Condition::Pl },
-        0b0110 => { Condition::Vs },
-        0b0111 => { Condition::Vc },
-        0b1000 => { Condition::Hi },
-        0b1001 => { Condition::Ls },
-        0b1010 => { Condition::Ge },
-        0b1011 => { Condition::Lt },
-        0b1100 => { Condition::Gt },
-        0b1101 => { Condition::Le },
-        0b1110 => { Condition::Al },
-        0b1111 => { Condition::Nv },
-        _      => { unreachable!() },
+        0b0000 => Condition::Eq,
+        0b0001 => Condition::Ne,
+        0b0010 => Condition::Cs,
+        0b0011 => Condition::Cc,
+        0b0100 => Condition::Mi,
+        0b0101 => Condition::Pl,
+        0b0110 => Condition::Vs,
+        0b0111 => Condition::Vc,
+        0b1000 => Condition::Hi,
+        0b1001 => Condition::Ls,
+        0b1010 => Condition::Ge,
+        0b1011 => Condition::Lt,
+        0b1100 => Condition::Gt,
+        0b1101 => Condition::Le,
+        0b1110 => Condition::Al,
+        0b1111 => Condition::Nv,
+        _ => unreachable!(),
     }
 }
 
@@ -539,12 +541,12 @@ fn decode_address_mode_1(inst: u32) -> AddressMode1 {
         AddressMode1::Shift {
             rm: Register(inst.bits(0..4)),
             shift: match inst.bits(5..7) {
-                0b00 => { ShiftDirection::Lsl },
-                0b01 => { ShiftDirection::Lsr },
-                0b10 => { ShiftDirection::Asr },
-                0b11 if inst.bits(7..12) == 0 => { ShiftDirection::Rrx },
-                0b11 => { ShiftDirection::Ror },
-                _ => { unreachable!() },
+                0b00 => ShiftDirection::Lsl,
+                0b01 => ShiftDirection::Lsr,
+                0b10 => ShiftDirection::Asr,
+                0b11 if inst.bits(7..12) == 0 => ShiftDirection::Rrx,
+                0b11 => ShiftDirection::Ror,
+                _ => unreachable!(),
             },
             shift_imm: if inst.bit(4) {
                 AddressingOffset::Register(Register(inst.bits(8..12)))
@@ -573,12 +575,12 @@ fn decode_address_mode_2(inst: u32) -> AddressMode2 {
             AddressingOffset::ScaledRegister {
                 rm: rm,
                 shift: match shift {
-                    0b00 => { ShiftDirection::Lsl },
-                    0b01 => { ShiftDirection::Lsr },
-                    0b10 => { ShiftDirection::Asr },
-                    0b11 if shift_imm == 0 => { ShiftDirection::Rrx },
-                    0b11 => { ShiftDirection::Ror },
-                    _ => { unreachable!() },
+                    0b00 => ShiftDirection::Lsl,
+                    0b01 => ShiftDirection::Lsr,
+                    0b10 => ShiftDirection::Asr,
+                    0b11 if shift_imm == 0 => ShiftDirection::Rrx,
+                    0b11 => ShiftDirection::Ror,
+                    _ => unreachable!(),
                 },
                 shift_imm: shift_imm as u8,
             }
@@ -587,11 +589,19 @@ fn decode_address_mode_2(inst: u32) -> AddressMode2 {
         AddressingOffset::Immediate(offset as u16)
     };
 
-    let addressing =
-        if p && w { AddressingMode::PreIndexed }
-        else if p && !w { AddressingMode::Offset }
-        else if !p && w { panic!("unpredictable") } // TODO: not unpredictable for address mode 2
-        else /* !p && !w  */ { AddressingMode::PostIndexed };
+    let addressing = if p && w {
+        AddressingMode::PreIndexed
+    } else if p && !w {
+        AddressingMode::Offset
+    } else if !p && w {
+        panic!("unpredictable")
+    }
+    // TODO: not unpredictable for address mode 2
+    else
+    /* !p && !w  */
+    {
+        AddressingMode::PostIndexed
+    };
 
     AddressMode2 {
         rn: rn,
@@ -618,11 +628,17 @@ fn decode_address_mode_3(inst: u32) -> AddressMode3 {
         AddressingOffset::Register(register)
     };
 
-    let addressing =
-        if p && w { AddressingMode::PreIndexed }
-        else if p && !w { AddressingMode::Offset }
-        else if !p && w { panic!("unpredictable") }
-        else /* !p && !w  */ { AddressingMode::PostIndexed };
+    let addressing = if p && w {
+        AddressingMode::PreIndexed
+    } else if p && !w {
+        AddressingMode::Offset
+    } else if !p && w {
+        panic!("unpredictable")
+    } else
+    /* !p && !w  */
+    {
+        AddressingMode::PostIndexed
+    };
 
     AddressMode3 {
         rn: rn,

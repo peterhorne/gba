@@ -35,7 +35,7 @@ pub const PC: Register = Register(15);
 impl Cpu {
     pub fn new(
         memory: MemoryMap,
-        interrupts: Rc<RefCell<InterruptController>>
+        interrupts: Rc<RefCell<InterruptController>>,
     ) -> Cpu {
         Cpu {
             regs: Registers::new(),
@@ -54,7 +54,8 @@ impl Cpu {
         let decode = self.decode();
         let execute = self.execute();
 
-        if self.regs[PC] != address { // Has a branch occurred?
+        if self.regs[PC] != address {
+            // Has a branch occurred?
             self.pipeline = InstructionPipeline::new(None, None, execute);
         } else {
             self.pipeline = InstructionPipeline::new(fetch, decode, execute);
@@ -79,11 +80,9 @@ impl Cpu {
     }
 
     fn decode(&mut self) -> Option<Instruction> {
-        self.pipeline.fetch.map(|bits| {
-            match bits {
-                EncodedInstruction::Thumb(bits) => decode_thumb(bits),
-                EncodedInstruction::Arm(bits) => decode_arm(bits),
-            }
+        self.pipeline.fetch.map(|bits| match bits {
+            EncodedInstruction::Thumb(bits) => decode_thumb(bits),
+            EncodedInstruction::Arm(bits) => decode_arm(bits),
         })
     }
 
@@ -118,17 +117,23 @@ pub struct InstructionPipeline {
 }
 
 impl InstructionPipeline {
-    fn new(fetch: Option<EncodedInstruction>,
-           decode: Option<Instruction>,
-           execute: Option<Instruction>) -> InstructionPipeline {
-        InstructionPipeline { fetch, decode, execute }
+    fn new(
+        fetch: Option<EncodedInstruction>,
+        decode: Option<Instruction>,
+        execute: Option<Instruction>,
+    ) -> InstructionPipeline {
+        InstructionPipeline {
+            fetch,
+            decode,
+            execute,
+        }
     }
 
     fn empty() -> InstructionPipeline {
         InstructionPipeline {
             fetch: None,
             decode: None,
-            execute: None
+            execute: None,
         }
     }
 }
@@ -149,14 +154,14 @@ impl ProgramStatusRegister {
 
     fn mode(&self) -> ProgramStatusRegisterMode {
         match self.0.bits(0..5) {
-            0b10000 => { ProgramStatusRegisterMode::User },
-            0b10001 => { ProgramStatusRegisterMode::FIQ },
-            0b10010 => { ProgramStatusRegisterMode::IRQ },
-            0b10011 => { ProgramStatusRegisterMode::Supervisor },
-            0b10111 => { ProgramStatusRegisterMode::Abort },
-            0b11011 => { ProgramStatusRegisterMode::Undefined },
-            0b11111 => { ProgramStatusRegisterMode::System },
-            _       => { panic!("unpredictable!") },
+            0b10000 => ProgramStatusRegisterMode::User,
+            0b10001 => ProgramStatusRegisterMode::FIQ,
+            0b10010 => ProgramStatusRegisterMode::IRQ,
+            0b10011 => ProgramStatusRegisterMode::Supervisor,
+            0b10111 => ProgramStatusRegisterMode::Abort,
+            0b11011 => ProgramStatusRegisterMode::Undefined,
+            0b11111 => ProgramStatusRegisterMode::System,
+            _ => panic!("unpredictable!"),
         }
     }
 
@@ -232,7 +237,14 @@ impl ProgramStatusRegister {
 
 #[derive(PartialEq)]
 enum ProgramStatusRegisterMode {
-    User, FIQ, IRQ, Supervisor, Abort, Undefined, System }
+    User,
+    FIQ,
+    IRQ,
+    Supervisor,
+    Abort,
+    Undefined,
+    System,
+}
 
 // Newtype to prevent a register's index being mistaken for it's value.
 #[derive(Clone, Copy, PartialEq)]

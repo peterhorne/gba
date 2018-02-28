@@ -50,9 +50,13 @@ fn main() {
 
 fn run(opt: Opt) -> std::result::Result<(), String> {
     let interrupts = Rc::new(RefCell::new(InterruptController::new()));
-    let bios = BufReader::new(File::open(opt.bios).map_err(|err| format!("Error reading BIOS:\n  {}", err))?);
-    let rom = BufReader::new(File::open(opt.rom).map_err(|err| format!("Error reading ROM:\n  {}", err))?);
+    let bios = BufReader::new(File::open(opt.bios)
+        .map_err(|err| format!("Error reading BIOS:\n  {}", err))?);
+    let rom = BufReader::new(File::open(opt.rom)
+        .map_err(|err| format!("Error reading ROM:\n  {}", err))?);
     let memory = MemoryMap::new(bios, rom, Rc::clone(&interrupts));
     let mut cpu = Cpu::new(memory, Rc::clone(&interrupts));
-    loop { cpu.tick(); }
+    loop {
+        cpu.tick();
+    }
 }

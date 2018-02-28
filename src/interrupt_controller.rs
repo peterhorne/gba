@@ -98,4 +98,3 @@ impl bus::Write for InterruptController {
         unimplemented!();
     }
 }
-

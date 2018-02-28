@@ -1,4 +1,4 @@
-use std::ops::{ BitAnd, BitAndAssign, BitOrAssign, Not, Shl, Shr, Sub };
+use std::ops::{BitAnd, BitAndAssign, BitOrAssign, Not, Shl, Shr, Sub};
 use core::ops::Range;
 
 /// Get the bit at a given offset.
@@ -13,16 +13,22 @@ use core::ops::Range;
 /// assert_eq!(binary.bit(1), false);
 /// ```
 pub trait Bit
-    where Self: BitAnd<Output=Self> + One + PartialEq + Shl<u8, Output=Self>
-                + Sized + Zero {
+where
+    Self: BitAnd<Output = Self>
+        + One
+        + PartialEq
+        + Shl<u8, Output = Self>
+        + Sized
+        + Zero,
+{
     fn bit(self, offset: u8) -> bool {
         self & (Self::one() << offset) != Self::zero()
     }
 }
 
-impl Bit for u32 { }
-impl Bit for u16 { }
-impl Bit for u8 { }
+impl Bit for u32 {}
+impl Bit for u16 {}
+impl Bit for u8 {}
 
 /// Get a given range of bits.
 ///
@@ -36,8 +42,14 @@ impl Bit for u8 { }
 /// assert_eq!(binary.bits(2..5), 0b110);
 /// ```
 pub trait Bits
-    where Self: BitAnd<Output=Self> + One + Shl<u8, Output=Self>
-                + Shr<u8, Output=Self> + Sized + Sub<Output=Self> {
+where
+    Self: BitAnd<Output = Self>
+        + One
+        + Shl<u8, Output = Self>
+        + Shr<u8, Output = Self>
+        + Sized
+        + Sub<Output = Self>,
+{
     fn bits(self, range: Range<u8>) -> Self {
         let length = range.end - range.start;
         let mask = (Self::one() << length) - Self::one();
@@ -45,9 +57,9 @@ pub trait Bits
     }
 }
 
-impl Bits for u32 { }
-impl Bits for u16 { }
-impl Bits for u8 { }
+impl Bits for u32 {}
+impl Bits for u16 {}
+impl Bits for u8 {}
 
 /// Sets the bit at a given offset.
 ///
@@ -63,8 +75,14 @@ impl Bits for u8 { }
 /// assert_eq!(binary, 0b11010);
 /// ```
 pub trait SetBit
-    where Self: BitAndAssign + BitOrAssign + Not<Output=Self> + One
-                + Shl<u8, Output=Self> + Sized {
+where
+    Self: BitAndAssign
+        + BitOrAssign
+        + Not<Output = Self>
+        + One
+        + Shl<u8, Output = Self>
+        + Sized,
+{
     fn set_bit(mut self, offset: u8, value: bool) {
         if value {
             self |= Self::one() << offset;
@@ -74,9 +92,9 @@ pub trait SetBit
     }
 }
 
-impl SetBit for u32 { }
-impl SetBit for u16 { }
-impl SetBit for u8 { }
+impl SetBit for u32 {}
+impl SetBit for u16 {}
+impl SetBit for u8 {}
 
 /// Set a given range of bits.
 ///
@@ -92,8 +110,15 @@ impl SetBit for u8 { }
 /// assert_eq!(binary, 0b01011);
 /// ```
 pub trait SetBits
-    where Self: BitAndAssign + BitOrAssign + Not<Output=Self> + One
-                + Shl<u8, Output=Self> + Sized + Sub<Output=Self> {
+where
+    Self: BitAndAssign
+        + BitOrAssign
+        + Not<Output = Self>
+        + One
+        + Shl<u8, Output = Self>
+        + Sized
+        + Sub<Output = Self>,
+{
     fn set_bits(mut self, range: Range<u8>, value: Self) {
         let length = range.end - range.start;
         let mask = (Self::one() << length) - Self::one();
@@ -102,25 +127,55 @@ pub trait SetBits
     }
 }
 
-impl SetBits for u32 { }
-impl SetBits for u16 { }
-impl SetBits for u8 { }
+impl SetBits for u32 {}
+impl SetBits for u16 {}
+impl SetBits for u8 {}
 
 // Bit functions are implemented as default methods on traits so the type of
 // the underlying value is unknown. In order to use the integers 0 and 1 we
 // define and implement the following two traits:
 
-pub trait One where Self: Sized {
+pub trait One
+where
+    Self: Sized,
+{
     fn one() -> Self;
 }
 
-pub trait Zero where Self: Sized {
+pub trait Zero
+where
+    Self: Sized,
+{
     fn zero() -> Self;
 }
 
-impl One for u32 { fn one() -> u32 { 1 } }
-impl One for u16 { fn one() -> u16 { 1 } }
-impl One for u8 { fn one() -> u8 { 1 } }
-impl Zero for u32 { fn zero() -> u32 { 0 } }
-impl Zero for u16 { fn zero() -> u16 { 0 } }
-impl Zero for u8 { fn zero() -> u8 { 0 } }
+impl One for u32 {
+    fn one() -> u32 {
+        1
+    }
+}
+impl One for u16 {
+    fn one() -> u16 {
+        1
+    }
+}
+impl One for u8 {
+    fn one() -> u8 {
+        1
+    }
+}
+impl Zero for u32 {
+    fn zero() -> u32 {
+        0
+    }
+}
+impl Zero for u16 {
+    fn zero() -> u16 {
+        0
+    }
+}
+impl Zero for u8 {
+    fn zero() -> u8 {
+        0
+    }
+}

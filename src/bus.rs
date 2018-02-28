@@ -1,4 +1,4 @@
-use byteorder::{ReadBytesExt, LittleEndian};
+use byteorder::{LittleEndian, ReadBytesExt};
 use std::cell::RefCell;
 use std::fs::File;
 use std::io::*;
@@ -44,7 +44,6 @@ impl<T: Write> Write for Rc<RefCell<T>> {
         self.borrow_mut().write_word(address, value);
     }
 }
-
 
 impl Read for RefCell<BufReader<File>> {
     fn read_byte(&self, address: u32) -> u8 {

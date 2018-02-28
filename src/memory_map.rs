@@ -17,7 +17,7 @@ impl MemoryMap {
     pub fn new(
         bios: BufReader<File>,
         rom: BufReader<File>,
-        interrupts: Rc<RefCell<InterruptController>>
+        interrupts: Rc<RefCell<InterruptController>>,
     ) -> MemoryMap {
         MemoryMap {
             bios: RefCell::new(bios),
@@ -127,7 +127,11 @@ struct MiscRegisters {
 
 impl MiscRegisters {
     fn new() -> MiscRegisters {
-        MiscRegisters { postflg: false, haltcnt: false, memcnt: 0 }
+        MiscRegisters {
+            postflg: false,
+            haltcnt: false,
+            memcnt: 0,
+        }
     }
 }
 
