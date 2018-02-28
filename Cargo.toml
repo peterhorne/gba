@@ -1,7 +1,8 @@
 [package]
 name = "gba"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Peter Horne <peterhorne92@gmail.com>"]
 
 [dependencies]
 byteorder = "1"
+structopt = "0.2"
