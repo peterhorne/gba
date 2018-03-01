@@ -57,7 +57,7 @@ impl Cpu {
             .map(|inst| execute(self, inst));
 
         if self.registers[PC] == pc {
-            self.incr_pc();
+            self.advance_pc();
         } else {
             // a branch has occurred
             self.pipeline.flush();
@@ -76,7 +76,7 @@ impl Cpu {
         }
     }
 
-    fn incr_pc(&mut self) {
+    fn advance_pc(&mut self) {
         let incr = if self.cpsr.t() { 2 } else { 4 };
         self.registers[PC] += incr;
     }
