@@ -16,7 +16,7 @@ pub struct Cpu {
     // r13:   Stack pointer (SP)
     // r14:   Link register (LR)
     // r15:   Program counter (PC)
-    pub regs: Registers,
+    pub registers: Registers,
 
     // Current Program Status Register
     pub cpsr: ProgramStatusRegister,
@@ -38,7 +38,7 @@ impl Cpu {
         interrupts: Rc<RefCell<InterruptController>>,
     ) -> Cpu {
         Cpu {
-            regs: Registers::new(),
+            registers: Registers::new(),
             cpsr: ProgramStatusRegister::new(),
             spsr: ProgramStatusRegister::new(),
             memory: memory,
@@ -48,7 +48,7 @@ impl Cpu {
     }
 
     pub fn tick(&mut self) {
-        let pc = self.regs[PC];
+        let pc = self.registers[PC];
 
         self.pipeline
             .enqueue(pc)
@@ -56,7 +56,7 @@ impl Cpu {
             .map(|inst| decode(inst))
             .map(|inst| execute(self, inst));
 
-        if self.regs[PC] == pc {
+        if self.registers[PC] == pc {
             self.incr_pc();
         } else {
             // a branch has occurred
@@ -78,7 +78,7 @@ impl Cpu {
 
     fn incr_pc(&mut self) {
         let incr = if self.cpsr.t() { 2 } else { 4 };
-        self.regs[PC] += incr;
+        self.registers[PC] += incr;
     }
 
     fn handle_interrupt(&mut self) {

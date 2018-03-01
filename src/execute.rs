@@ -17,17 +17,17 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             l, signed_immed, ..
         } => {
             if l {
-                let pc_val = cpu.regs[PC];
-                cpu.regs[LR] = pc_val + 4;
+                let pc_val = cpu.registers[PC];
+                cpu.registers[LR] = pc_val + 4;
             }
 
-            cpu.regs[PC] += sign_extend(signed_immed, 24) << 2;
+            cpu.registers[PC] += sign_extend(signed_immed, 24) << 2;
         }
 
         Instruction::Bx { rm, .. } => {
-            let rm_val = cpu.regs[rm];
+            let rm_val = cpu.registers[rm];
             cpu.cpsr.set_t(rm_val.bit(0));
-            cpu.regs[PC] = rm_val & 0xFFFFFFFE;
+            cpu.registers[PC] = rm_val & 0xFFFFFFFE;
         }
 
         Instruction::And {
@@ -39,8 +39,8 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let result = cpu.regs[rn] & shifter_operand;
-            cpu.regs[rd] = result;
+            let result = cpu.registers[rn] & shifter_operand;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -60,8 +60,8 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let result = cpu.regs[rn] | shifter_operand;
-            cpu.regs[rd] = result;
+            let result = cpu.registers[rn] | shifter_operand;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -81,9 +81,9 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result = rn_val - shifter_operand;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -108,9 +108,9 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result = shifter_operand - rn_val;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -135,10 +135,10 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result_long = rn_val as u64 + shifter_operand as u64;
             let result = result_long as u32;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -163,12 +163,12 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let c_flag = if cpu.cpsr.c() { 1 } else { 0 };
             let result_long =
                 rn_val as u64 + shifter_operand as u64 + c_flag as u64;
             let result = result_long as u32;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -193,10 +193,10 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
             let result = rn_val - shifter_operand - not_c_flag;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -222,10 +222,10 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let not_c_flag = if cpu.cpsr.c() { 0 } else { 1 };
             let result = shifter_operand - rn_val - not_c_flag;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -245,7 +245,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         Instruction::Tst { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result = rn_val & shifter_operand;
             cpu.cpsr.set_n(result.bit(31));
             cpu.cpsr.set_z(result == 0);
@@ -255,7 +255,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         Instruction::Teq { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result = rn_val | shifter_operand;
             cpu.cpsr.set_n(result.bit(31));
             cpu.cpsr.set_z(result == 0);
@@ -265,7 +265,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         Instruction::Cmp { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result = rn_val - shifter_operand;
             cpu.cpsr.set_n(result.bit(31));
             cpu.cpsr.set_z(result == 0);
@@ -277,7 +277,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         Instruction::Cmn { rn, operand2, .. } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result_long = rn_val as u64 + shifter_operand as u64;
             let result = result_long as u32;
 
@@ -297,9 +297,9 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result = rn_val | shifter_operand;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -315,7 +315,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            cpu.regs[rd] = shifter_operand;
+            cpu.registers[rd] = shifter_operand;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -335,9 +335,9 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         } => {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
-            let rn_val = cpu.regs[rn];
+            let rn_val = cpu.registers[rn];
             let result = rn_val & !shifter_operand;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -354,7 +354,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let (shifter_operand, shifter_carry_out) =
                 addr_mode_1(cpu, operand2);
             let result = !shifter_operand;
-            cpu.regs[rd] = result;
+            cpu.registers[rd] = result;
 
             if s && rd == PC {
                 cpu.cpsr = cpu.spsr;
@@ -463,7 +463,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         }
 
         Instruction::Mrs { r, rd, .. } => {
-            cpu.regs[rd] = if r {
+            cpu.registers[rd] = if r {
                 cpu.spsr.to_bits()
             } else {
                 cpu.cpsr.to_bits()
@@ -489,7 +489,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         Instruction::Ldrbt { rd, address, .. } => {
             let address = addr_mode_2(cpu, address);
             // TODO: signal memory system to act as if CPU is in user mode
-            cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
+            cpu.registers[rd] = cpu.memory.read_byte(address) as u32;
         }
 
         Instruction::Ldrt { rd, address, .. } => {
@@ -497,12 +497,12 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             // TODO: signal memory system to act as if CPU is in user mode
             let value = cpu.memory.read_word(address);
             let rotation = address.bits(0..2);
-            cpu.regs[rd] = value.rotate_right(8 * rotation);
+            cpu.registers[rd] = value.rotate_right(8 * rotation);
         }
 
         Instruction::Ldrb { rd, address, .. } => {
             let address = addr_mode_2(cpu, address);
-            cpu.regs[rd] = cpu.memory.read_byte(address) as u32;
+            cpu.registers[rd] = cpu.memory.read_byte(address) as u32;
         }
 
         Instruction::Ldr { rd, address, .. } => {
@@ -511,7 +511,7 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
             let rotation = address.bits(0..2);
             let result = value.rotate_right(8 * rotation);
 
-            cpu.regs[rd] = if rd == PC {
+            cpu.registers[rd] = if rd == PC {
                 result & 0xFFFFFFFC
             } else {
                 result
@@ -521,23 +521,23 @@ pub fn execute(cpu: &mut Cpu, inst: Instruction) {
         Instruction::Strbt { rd, address, .. } => {
             let address = addr_mode_2(cpu, address);
             // TODO: signal memory system to act as if CPU is in user mode
-            cpu.memory.write_byte(address, cpu.regs[rd] as u8);
+            cpu.memory.write_byte(address, cpu.registers[rd] as u8);
         }
 
         Instruction::Strt { rd, address, .. } => {
             let address = addr_mode_2(cpu, address);
             // TODO: signal memory system to act as if CPU is in user mode
-            cpu.memory.write_word(address, cpu.regs[rd]);
+            cpu.memory.write_word(address, cpu.registers[rd]);
         }
 
         Instruction::Strb { rd, address, .. } => {
             let address = addr_mode_2(cpu, address);
-            cpu.memory.write_byte(address, cpu.regs[rd] as u8);
+            cpu.memory.write_byte(address, cpu.registers[rd] as u8);
         }
 
         Instruction::Str { rd, address, .. } => {
             let address = addr_mode_2(cpu, address);
-            cpu.memory.write_word(address, cpu.regs[rd]);
+            cpu.memory.write_word(address, cpu.registers[rd]);
         }
 
         Instruction::Ldm1 { .. } => {
@@ -641,11 +641,11 @@ fn addr_mode_1(cpu: &Cpu, address: AddressMode1) -> (u32, bool) {
             shift,
             shift_imm,
         } => {
-            let rm_val = cpu.regs[rm];
+            let rm_val = cpu.registers[rm];
             let shift_imm = match shift_imm {
                 AddressingOffset::Immediate(value) => value,
                 AddressingOffset::Register(rs) => {
-                    cpu.regs[rs].bits(0..8) as u16
+                    cpu.registers[rs].bits(0..8) as u16
                 }
                 AddressingOffset::ScaledRegister { .. } => unreachable!(),
             };
@@ -739,13 +739,13 @@ fn addr_mode_2(cpu: &mut Cpu, address: AddressMode2) -> u32 {
 
     let offset_val = match offset {
         AddressingOffset::Immediate(offset) => offset as u32,
-        AddressingOffset::Register(rm) => cpu.regs[rm],
+        AddressingOffset::Register(rm) => cpu.registers[rm],
         AddressingOffset::ScaledRegister {
             rm,
             shift,
             shift_imm,
         } => {
-            let rm_val = cpu.regs[rm];
+            let rm_val = cpu.registers[rm];
             match shift {
                 ShiftDirection::Lsl => rm_val << shift_imm,
                 ShiftDirection::Lsr => {
@@ -774,7 +774,7 @@ fn addr_mode_2(cpu: &mut Cpu, address: AddressMode2) -> u32 {
         }
     };
 
-    let rn_val = cpu.regs[rn];
+    let rn_val = cpu.registers[rn];
     let value = if u {
         rn_val + offset_val
     } else {
@@ -784,11 +784,11 @@ fn addr_mode_2(cpu: &mut Cpu, address: AddressMode2) -> u32 {
     match addressing {
         AddressingMode::Offset => value,
         AddressingMode::PreIndexed => {
-            cpu.regs[rn] = value;
+            cpu.registers[rn] = value;
             value
         }
         AddressingMode::PostIndexed => {
-            cpu.regs[rn] = value;
+            cpu.registers[rn] = value;
             rn_val
         }
     }
@@ -804,11 +804,11 @@ fn addr_mode_3(cpu: &mut Cpu, address: AddressMode3) -> u32 {
 
     let offset_val = match offset {
         AddressingOffset::Immediate(byte) => byte as u32,
-        AddressingOffset::Register(rm) => cpu.regs[rm],
+        AddressingOffset::Register(rm) => cpu.registers[rm],
         AddressingOffset::ScaledRegister { .. } => unreachable!(),
     };
 
-    let rn_val = cpu.regs[rn];
+    let rn_val = cpu.registers[rn];
     let value = if u {
         rn_val + offset_val
     } else {
@@ -818,11 +818,11 @@ fn addr_mode_3(cpu: &mut Cpu, address: AddressMode3) -> u32 {
     match addressing {
         AddressingMode::Offset => value,
         AddressingMode::PreIndexed => {
-            cpu.regs[rn] = value;
+            cpu.registers[rn] = value;
             value
         }
         AddressingMode::PostIndexed => {
-            cpu.regs[rn] = value;
+            cpu.registers[rn] = value;
             rn_val
         }
     }
