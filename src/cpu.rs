@@ -1,9 +1,9 @@
 use bit::{Bit, Bits, SetBit, SetBits};
 use bus::{Read, Write};
 use core::ops::Range;
-use decode::{decode_arm, decode_thumb};
+use decode::decode;
 use execute::execute;
-use instruction::Instruction;
+use instruction::{EncodedInstruction, Instruction};
 use interrupt_controller::InterruptController;
 use memory_map::MemoryMap;
 use std::cell::RefCell;
@@ -26,7 +26,7 @@ pub struct Cpu {
 
     pub memory: MemoryMap,
     interrupts: Rc<RefCell<InterruptController>>,
-    pipeline: InstructionPipeline,
+    pipeline: Pipeline,
 }
 
 pub const LR: Register = Register(14);
@@ -43,23 +43,24 @@ impl Cpu {
             spsr: ProgramStatusRegister::new(),
             memory: memory,
             interrupts: interrupts,
-            pipeline: InstructionPipeline::empty(),
+            pipeline: Pipeline::new(),
         }
     }
 
     pub fn tick(&mut self) {
-        let address = self.regs[PC];
+        let pc = self.regs[PC];
 
-        let fetch = self.fetch();
-        let decode = self.decode();
-        let execute = self.execute();
+        self.pipeline
+            .enqueue(pc)
+            .map(|addr| self.fetch(addr))
+            .map(|inst| decode(inst))
+            .map(|inst| execute(self, inst));
 
-        if self.regs[PC] != address {
-            // Has a branch occurred?
-            self.pipeline = InstructionPipeline::new(None, None, execute);
-        } else {
-            self.pipeline = InstructionPipeline::new(fetch, decode, execute);
+        if self.regs[PC] == pc {
             self.incr_pc();
+        } else {
+            // a branch has occurred
+            self.pipeline.flush();
         }
 
         if self.interrupts.borrow().is_asserted() {
@@ -67,30 +68,12 @@ impl Cpu {
         }
     }
 
-    fn fetch(&self) -> Option<EncodedInstruction> {
-        let address = self.regs[PC];
-
-        let bits = if self.cpsr.t() {
+    fn fetch(&self, address: u32) -> EncodedInstruction {
+        if self.cpsr.t() {
             EncodedInstruction::Thumb(self.memory.read_halfword(address))
         } else {
             EncodedInstruction::Arm(self.memory.read_word(address))
-        };
-
-        Some(bits)
-    }
-
-    fn decode(&mut self) -> Option<Instruction> {
-        self.pipeline.fetch.map(|bits| match bits {
-            EncodedInstruction::Thumb(bits) => decode_thumb(bits),
-            EncodedInstruction::Arm(bits) => decode_arm(bits),
-        })
-    }
-
-    fn execute(&mut self) -> Option<Instruction> {
-        self.pipeline.decode.map(|inst| {
-            execute(self, inst.clone());
-            inst
-        })
+        }
     }
 
     fn incr_pc(&mut self) {
@@ -110,38 +93,26 @@ impl Cpu {
     }
 }
 
-pub struct InstructionPipeline {
-    fetch: Option<EncodedInstruction>,
-    decode: Option<Instruction>,
-    execute: Option<Instruction>,
-}
+/// A fixed length queue of instruction addresses for the CPU to process.
+struct Pipeline((Option<u32>, Option<u32>));
 
-impl InstructionPipeline {
-    fn new(
-        fetch: Option<EncodedInstruction>,
-        decode: Option<Instruction>,
-        execute: Option<Instruction>,
-    ) -> InstructionPipeline {
-        InstructionPipeline {
-            fetch,
-            decode,
-            execute,
-        }
+impl Pipeline {
+    fn new() -> Pipeline {
+        Pipeline((None, None))
     }
 
-    fn empty() -> InstructionPipeline {
-        InstructionPipeline {
-            fetch: None,
-            decode: None,
-            execute: None,
-        }
+    /// Add a new address to the pipeline, shifting the last address off the
+    /// end and returning it.
+    fn enqueue(&mut self, address: u32) -> Option<u32> {
+        let (a, b) = self.0;
+        self.0 = (Some(address), a);
+        b
     }
-}
 
-#[derive(Clone, Copy)]
-enum EncodedInstruction {
-    Arm(u32),
-    Thumb(u16),
+    /// Empty the pipeline.
+    fn flush(&mut self) {
+        self.0 = (None, None);
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -246,7 +217,6 @@ enum ProgramStatusRegisterMode {
     System,
 }
 
-// Newtype to prevent a register's index being mistaken for it's value.
 #[derive(Clone, Copy, PartialEq)]
 pub struct Register(pub u32);
 

@@ -1,6 +1,12 @@
 use cpu::Register;
 use std::fmt;
 
+#[derive(Clone, Copy)]
+pub enum EncodedInstruction {
+    Arm(u32),
+    Thumb(u16),
+}
+
 #[derive(Copy, Clone)]
 pub enum Instruction {
     // Branch
