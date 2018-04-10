@@ -123,15 +123,15 @@ impl ProgramStatusRegister {
         ProgramStatusRegister(0x1F)
     }
 
-    fn mode(&self) -> ProgramStatusRegisterMode {
+    fn mode(&self) -> Mode {
         match self.0.bits(0..5) {
-            0b10000 => ProgramStatusRegisterMode::User,
-            0b10001 => ProgramStatusRegisterMode::FIQ,
-            0b10010 => ProgramStatusRegisterMode::IRQ,
-            0b10011 => ProgramStatusRegisterMode::Supervisor,
-            0b10111 => ProgramStatusRegisterMode::Abort,
-            0b11011 => ProgramStatusRegisterMode::Undefined,
-            0b11111 => ProgramStatusRegisterMode::System,
+            0b10000 => Mode::User,
+            0b10001 => Mode::FIQ,
+            0b10010 => Mode::IRQ,
+            0b10011 => Mode::Supervisor,
+            0b10111 => Mode::Abort,
+            0b11011 => Mode::Undefined,
+            0b11111 => Mode::System,
             _ => panic!("unpredictable!"),
         }
     }
@@ -143,12 +143,12 @@ impl ProgramStatusRegister {
     // Program status register modes
 
     pub fn is_priviledged(&self) -> bool {
-        self.mode() != ProgramStatusRegisterMode::User
+        self.mode() != Mode::User
     }
 
     pub fn has_spsr(&self) -> bool {
-        self.mode() != ProgramStatusRegisterMode::User
-            && self.mode() != ProgramStatusRegisterMode::System
+        self.mode() != Mode::User
+            && self.mode() != Mode::System
     }
 
     // Flags
@@ -207,7 +207,7 @@ impl ProgramStatusRegister {
 }
 
 #[derive(PartialEq)]
-enum ProgramStatusRegisterMode {
+enum Mode {
     User,
     FIQ,
     IRQ,
@@ -220,11 +220,31 @@ enum ProgramStatusRegisterMode {
 #[derive(Clone, Copy, PartialEq)]
 pub struct Register(pub u32);
 
-pub struct Registers([u32; 16]);
+pub struct Registers {
+    mode: Mode,
+    user: [u32; 16],
+    supervisor: [u32; 2],
+    abort: [u32; 2],
+    undefined: [u32; 2],
+    irq: [u32; 2],
+    fiq: [u32; 7],
+}
 
 impl Registers {
     fn new() -> Registers {
-        Registers([0; 16])
+        Registers {
+            mode: Mode::User,
+            user: [0; 16],
+            supervisor: [0; 2],
+            abort: [0; 2],
+            undefined: [0; 2],
+            irq: [0; 2],
+            fiq: [0; 7],
+        }
+    }
+
+    fn bank(&mut self, mode: Mode) {
+        self.mode = mode;
     }
 }
 
@@ -232,12 +252,36 @@ impl Index<Register> for Registers {
     type Output = u32;
 
     fn index(&self, index: Register) -> &u32 {
-        &self.0[index.0 as usize]
+        use self::Mode::*;
+        match (&self.mode, index.0) {
+            (&Supervisor, 13...14) => {
+                &self.supervisor[(index.0 - 13) as usize]
+            }
+            (&Abort, 13...14) => &self.abort[(index.0 - 13) as usize],
+            (&Undefined, 13...14) => {
+                &self.undefined[(index.0 - 13) as usize]
+            }
+            (&IRQ, 13...14) => &self.irq[(index.0 - 13) as usize],
+            (&FIQ, 8...14) => &self.fiq[(index.0 - 8) as usize],
+            _ => &self.user[index.0 as usize],
+        }
     }
 }
 
 impl IndexMut<Register> for Registers {
     fn index_mut(&mut self, index: Register) -> &mut u32 {
-        &mut self.0[index.0 as usize]
+        use self::Mode::*;
+        match (&self.mode, index.0) {
+            (&Supervisor, 13...14) => {
+                &mut self.supervisor[(index.0 - 13) as usize]
+            }
+            (&Abort, 13...14) => &mut self.abort[(index.0 - 13) as usize],
+            (&Undefined, 13...14) => {
+                &mut self.undefined[(index.0 - 13) as usize]
+            }
+            (&IRQ, 13...14) => &mut self.irq[(index.0 - 13) as usize],
+            (&FIQ, 8...14) => &mut self.fiq[(index.0 - 8) as usize],
+            _ => &mut self.user[index.0 as usize],
+        }
     }
 }
