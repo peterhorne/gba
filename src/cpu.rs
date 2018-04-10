@@ -49,18 +49,18 @@ impl Cpu {
 
     pub fn tick(&mut self) {
         let pc = self.registers[PC];
+        self.pipeline.enqueue(pc);
 
-        self.pipeline
-            .enqueue(pc)
-            .map(|addr| self.fetch(addr))
-            .map(|inst| decode(inst))
-            .map(|inst| execute(self, inst));
+        if let Some(addr) = self.pipeline.peek() {
+            let bits = self.fetch(addr);
+            let inst = decode(bits);
+            execute(self, inst);
+        }
 
-        if self.registers[PC] == pc {
-            self.advance_pc();
-        } else {
-            // a branch has occurred
+        if self.branch_occurred(pc) {
             self.pipeline.flush();
+        } else {
+            self.advance_pc();
         }
 
         if self.interrupts.borrow().is_asserted() {
@@ -74,6 +74,10 @@ impl Cpu {
         } else {
             EncodedInstruction::Arm(self.memory.read_word(address))
         }
+    }
+
+    fn branch_occurred(&self, prev_pc: u32) -> bool {
+        prev_pc != self.registers[PC]
     }
 
     fn advance_pc(&mut self) {
@@ -94,24 +98,28 @@ impl Cpu {
 }
 
 /// A fixed length queue of instruction addresses for the CPU to process.
-struct Pipeline((Option<u32>, Option<u32>));
+struct Pipeline((Option<u32>, Option<u32>, Option<u32>));
 
 impl Pipeline {
     fn new() -> Pipeline {
-        Pipeline((None, None))
+        Pipeline((None, None, None))
     }
 
-    /// Add a new address to the pipeline, shifting the last address off the
-    /// end and returning it.
-    fn enqueue(&mut self, address: u32) -> Option<u32> {
-        let (a, b) = self.0;
-        self.0 = (Some(address), a);
-        b
+    /// Add a new address to the pipeline, causing the address at the front
+    /// of the queue to be dropped.
+    fn enqueue(&mut self, address: u32) {
+        let (a, b, _) = self.0;
+        self.0 = (Some(address), a, b);
+    }
+
+    /// Get the address at the front of the queue.
+    fn peek(&self) -> Option<u32> {
+        (self.0).2
     }
 
     /// Empty the pipeline.
     fn flush(&mut self) {
-        self.0 = (None, None);
+        self.0 = (None, None, None);
     }
 }
 
